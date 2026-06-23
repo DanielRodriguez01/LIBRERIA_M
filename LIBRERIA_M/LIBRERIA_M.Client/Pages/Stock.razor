@@ -1,0 +1,255 @@
+﻿@page "/stock"
+@rendermode InteractiveWebAssembly
+
+@using LIBRERIA_M.Client.Models
+@using LIBRERIA_M.Client.Services
+
+@inject ProductoService ProductoService
+@inject NavigationManager Navigation
+
+<PageTitle>Stock</PageTitle>
+
+<div class="page-container">
+
+    <h2 class="titulo-modulo">
+        STOCK
+    </h2>
+
+    <div class="card-principal">
+
+        <div class="card-secundaria">
+
+            <!-- ========================= -->
+            <!-- Barra Superior -->
+            <!-- ========================= -->
+
+            <div class="toolbar">
+
+                <input class="input-busqueda"
+                       type="text"
+                       placeholder="🔍 Buscar producto por nombre o código..."
+                       @bind="textoBusqueda"
+                       @bind:event="oninput" />
+
+                <button class="btn-principal"
+                        @onclick="NuevoProducto">
+                    + Nuevo Producto
+                </button>
+
+            </div>
+
+            <!-- ========================= -->
+            <!-- Filtros -->
+            <!-- ========================= -->
+
+            <div class="filtros">
+
+                <span class="titulo-filtro">
+                    Filtrar por stock:
+                </span>
+
+                <div class="grupo-filtros">
+
+                    <button class="@(ObtenerClaseFiltro("Todos"))"
+                            @onclick='() => CambiarFiltro("Todos")'>
+                        Todos
+                    </button>
+
+                    <button class="@(ObtenerClaseFiltro("StockBajo"))"
+                            @onclick='() => CambiarFiltro("StockBajo")'>
+                        Stock Bajo
+                    </button>
+
+                    <button class="@(ObtenerClaseFiltro("SinStock"))"
+                            @onclick='() => CambiarFiltro("SinStock")'>
+                        Sin Stock
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- ========================= -->
+            <!-- Tabla -->
+            <!-- ========================= -->
+
+            <table class="tabla-stock">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Stock</th>
+                        <th>Estado</th>
+                        <th>Precio</th>
+                        <th>Acciones</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    @if (ProductosFiltrados.Any())
+                    {
+                        @foreach (var producto in ProductosFiltrados)
+                        {
+                            <tr>
+
+                                <td>@producto.Codigo</td>
+
+                                <td>@producto.Nombre</td>
+
+                                <td>
+
+                                    @if (producto.StockBajo)
+                                    {
+                                        <span class="stock-bajo">
+                                            @producto.StockActual
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        @producto.StockActual
+                                    }
+
+                                </td>
+
+                                <td>
+
+                                    @if (producto.Estado == "Disponible")
+                                    {
+                                        <span class="estado-disponible">
+                                            Disponible
+                                        </span>
+                                    }
+                                    else if (producto.Estado == "Stock Bajo")
+                                    {
+                                        <span class="estado-stockbajo">
+                                            Stock Bajo
+                                        </span>
+                                    }
+                                    else if (producto.Estado == "Sin Stock")
+                                    {
+                                        <span class="estado-sinstock">
+                                            Sin Stock
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span>
+                                            @producto.Estado
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <td>
+
+                                    @producto.PrecioUnitario.ToString("C")
+
+                                </td>
+
+                                <td>
+
+                                    <button class="btn-editar"
+                                            @onclick="() => EditarProducto(producto.IdProducto)">
+                                        Editar
+                                    </button>
+
+                                </td>
+
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+
+                            <td colspan="6" class="sin-registros">
+
+                                No se encontraron productos.
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+@code {
+
+    private List<ProductoDto> productos = new();
+
+    private string textoBusqueda = "";
+
+    private string filtroStock = "Todos";
+
+    protected override async Task OnInitializedAsync()
+    {
+        productos = await ProductoService.ObtenerProductos();
+    }
+
+    private IEnumerable<ProductoDto> ProductosFiltrados =>
+        productos
+            .Where(p =>
+                string.IsNullOrWhiteSpace(textoBusqueda)
+                || p.Nombre.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase)
+                || p.Codigo.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase))
+             .Where(p =>
+                    {
+                        switch (filtroStock)
+                        {
+                                            case "StockBajo":
+                                            return p.Estado == "Stock Bajo";
+
+                                            case "SinStock":
+                                            return p.Estado == "Sin Stock";
+
+                                            default:
+                                            return true;
+                        }
+                    });
+
+    private void CambiarFiltro(string filtro)
+    {
+    filtroStock = filtro;
+
+    StateHasChanged();
+    }
+
+    private string ObtenerClaseFiltro(string filtro)
+    {
+        if (filtroStock != filtro)
+            return "btn-filtro";
+
+        return filtro switch
+        {
+            "Todos" => "btn-filtro filtro-todos",
+            "StockBajo" => "btn-filtro filtro-stockbajo",
+            "SinStock" => "btn-filtro filtro-sinstock",
+            _ => "btn-filtro"
+        };
+    }
+
+    private void NuevoProducto()
+    {
+
+    }
+
+    private void EditarProducto(int idProducto)
+    {
+
+    }
+
+}

@@ -1,0 +1,66 @@
+﻿@page "/productos"
+@rendermode InteractiveWebAssembly
+
+@inject LIBRERIA_M.Client.Services.ProductoService ProductoService
+
+<h2 class="mb-4 text-primary">
+    <i class="fa-solid fa-box"></i>
+    Gestión de Productos
+</h2>
+
+@if (productos == null)
+{
+    <div class="alert alert-info">
+        Cargando productos...
+    </div>
+}
+else
+{
+    <table class="table table-bordered table-hover">
+
+        <thead class="table-dark">
+
+            <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Stock</th>
+                <th>Precio</th>
+                <th>Estado</th>
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            @foreach (var producto in productos)
+            {
+                <tr>
+
+                    <td>@producto.IdProducto.ToString("D5")</td>
+
+                    <td>@producto.Nombre</td>
+
+                    <td>@producto.StockActual</td>
+
+                    <td>@producto.PrecioUnitario</td>
+
+                    <td>@producto.Estado</td>
+
+                </tr>
+            }
+
+        </tbody>
+
+    </table>
+}
+
+@code{
+
+    private List<LIBRERIA_M.Client.Models.ProductoDto>? productos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        productos = await ProductoService.ObtenerProductos();
+    }
+
+}

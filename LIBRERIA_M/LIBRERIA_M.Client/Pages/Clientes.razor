@@ -1,0 +1,299 @@
+﻿@page "/clientes"
+@rendermode InteractiveWebAssembly
+
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject IJSRuntime JS
+@inject LIBRERIA_M.Client.Services.ClienteService ClienteService
+
+<h2 class="mb-4 text-primary">
+    <i class="fa-solid fa-users"></i>
+    Gestión de Clientes
+</h2>
+
+<div class="card shadow-sm mb-4">
+
+
+<div class="card-header bg-primary text-white">
+
+    <h5 class="mb-0">
+        @(modoEdicion ? "Editar Cliente" : "Nuevo Cliente")
+    </h5>
+
+</div>
+
+<div class="card-body">
+
+    <EditForm Model="nuevoCliente"
+              OnValidSubmit="GuardarCliente">
+
+        <DataAnnotationsValidator />
+
+        <ValidationSummary />
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre</label>
+                    <input class="form-control"
+                           @bind="nuevoCliente.Nombre" />
+                    <ValidationMessage For="@(() => nuevoCliente.Nombre)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Apellido</label>
+                    <input class="form-control"
+                           @bind="nuevoCliente.Apellido" />
+                    <ValidationMessage For="@(() => nuevoCliente.Apellido)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">DNI</label>
+                    <input class="form-control"
+                           @bind="nuevoCliente.DNI" />
+                    <ValidationMessage For="@(() => nuevoCliente.DNI)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Teléfono</label>
+                    <input class="form-control"
+                           @bind="nuevoCliente.Telefono" />
+                    <ValidationMessage For="@(() => nuevoCliente.Telefono)" />
+                </div>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <div class="mb-3">
+                    <label class="form-label">Dirección</label>
+                    <input class="form-control"
+                           @bind="nuevoCliente.Direccion" />
+                    <ValidationMessage For="@(() => nuevoCliente.Direccion)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input class="form-control"
+                           @bind="nuevoCliente.Email" />
+                    <ValidationMessage For="@(() => nuevoCliente.Email)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Tipo Cliente</label>
+                    <input class="form-control"
+                           @bind="nuevoCliente.TipoCliente" />
+                    <ValidationMessage For="@(() => nuevoCliente.TipoCliente)" />
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="mt-3">
+
+            <button class="btn btn-success"
+                    type="submit">
+
+                <i class="fa-solid fa-floppy-disk"></i>
+
+                @(modoEdicion
+                    ? " Actualizar Cliente"
+                    : " Guardar Cliente")
+
+            </button>
+
+            @if (modoEdicion)
+            {
+                <button class="btn btn-secondary ms-2"
+                        type="button"
+                        @onclick="CancelarEdicion">
+
+                    <i class="fa-solid fa-xmark"></i>
+                    Cancelar
+
+                </button>
+            }
+
+        </div>
+
+    </EditForm>
+
+</div>
+
+
+</div>
+
+@if (clientes == null)
+{ <div class="alert alert-info">
+Cargando clientes... </div>
+}
+else
+{ <div class="card shadow-sm">
+
+
+    <div class="card-header bg-dark text-white">
+        Clientes Registrados
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-hover table-bordered align-middle">
+
+            <thead class="table-dark">
+
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>DNI</th>
+                    <th>Teléfono</th>
+                    <th>Tipo Cliente</th>
+                    <th width="140">Acciones</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                @foreach (var cliente in clientes)
+                {
+                    <tr>
+
+                        <td>@cliente.Nombre</td>
+                        <td>@cliente.Apellido</td>
+                        <td>@cliente.DNI</td>
+                        <td>@cliente.Telefono</td>
+                        <td>@cliente.TipoCliente</td>
+
+                        <td>
+
+                            <button class="btn btn-outline-primary btn-sm me-2"
+                                    title="Editar"
+                                    @onclick="() => EditarCliente(cliente)">
+
+                                <i class="fa-solid fa-pen"></i>
+
+                            </button>
+
+                            <button class="btn btn-outline-danger btn-sm"
+                                    title="Desactivar"
+                                    @onclick="() => ConfirmarDesactivacion(cliente.IdCliente)">
+
+                                <i class="fa-solid fa-trash"></i>
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+                }
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+}
+
+@code
+{
+private List<LIBRERIA_M.Client.Models.ClienteDto>? clientes;
+
+
+private LIBRERIA_M.Client.Models.ClienteDto nuevoCliente = new();
+
+private bool modoEdicion = false;
+
+protected override async Task OnInitializedAsync()
+{
+    clientes = await ClienteService.ObtenerClientes();
+}
+
+private async Task GuardarCliente()
+{
+    try
+    {
+        nuevoCliente.Estado = true;
+
+        if (modoEdicion)
+        {
+            await ClienteService.ActualizarCliente(nuevoCliente);
+        }
+        else
+        {
+            await ClienteService.CrearCliente(nuevoCliente);
+        }
+
+        clientes = await ClienteService.ObtenerClientes();
+
+        nuevoCliente = new();
+
+        modoEdicion = false;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"ERROR: {ex.Message}");
+    }
+}
+
+private void EditarCliente(
+    LIBRERIA_M.Client.Models.ClienteDto cliente)
+{
+    nuevoCliente = new()
+    {
+        IdCliente = cliente.IdCliente,
+        Nombre = cliente.Nombre,
+        Apellido = cliente.Apellido,
+        DNI = cliente.DNI,
+        Telefono = cliente.Telefono,
+        Direccion = cliente.Direccion,
+        Email = cliente.Email,
+        TipoCliente = cliente.TipoCliente,
+        PorcentajeDescuento = cliente.PorcentajeDescuento,
+        Estado = cliente.Estado
+    };
+
+    modoEdicion = true;
+}
+
+private async Task DesactivarCliente(int idCliente)
+{
+    try
+    {
+        await ClienteService.DesactivarCliente(idCliente);
+
+        clientes = await ClienteService.ObtenerClientes();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"ERROR: {ex.Message}");
+    }
+}
+
+private async Task ConfirmarDesactivacion(int idCliente)
+{
+    var confirmar = await JS.InvokeAsync<bool>(
+        "confirm",
+        "¿Está seguro que desea desactivar este cliente?");
+
+    if (confirmar)
+    {
+        await DesactivarCliente(idCliente);
+    }
+}
+
+private void CancelarEdicion()
+{
+    nuevoCliente = new();
+
+    modoEdicion = false;
+}
+
+
+}
