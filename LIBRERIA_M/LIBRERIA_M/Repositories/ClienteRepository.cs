@@ -20,8 +20,6 @@ namespace LIBRERIA_M.Repositories
             // .ConfigureAwait(false) evita el deadlock en modo de depuración
             var clientes = await connection.QueryAsync<ClienteDto>(
                 "sp_ListarClientes",
-                commandType: System.Data.CommandType.StoredProcedure)
-                .ConfigureAwait(false);
 
             return clientes;
         }
@@ -41,11 +39,8 @@ namespace LIBRERIA_M.Repositories
                     cliente.Direccion,
                     cliente.Email,
                     cliente.TipoCliente,
-                    cliente.PorcentajeDescuento, // Asegura la lógica de fotocopias al por mayor
                     cliente.Estado
                 },
-                commandType: System.Data.CommandType.StoredProcedure)
-                .ConfigureAwait(false);
         }
 
         public async Task ActualizarClienteAsync(ClienteDto cliente)
@@ -67,8 +62,6 @@ namespace LIBRERIA_M.Repositories
                     cliente.PorcentajeDescuento,
                     cliente.Estado
                 },
-                commandType: System.Data.CommandType.StoredProcedure)
-                .ConfigureAwait(false);
         }
 
         public async Task DesactivarClienteAsync(int idCliente)
@@ -81,8 +74,6 @@ namespace LIBRERIA_M.Repositories
                 {
                     IdCliente = idCliente
                 },
-                commandType: System.Data.CommandType.StoredProcedure)
-                .ConfigureAwait(false);
         }
     }
 }
