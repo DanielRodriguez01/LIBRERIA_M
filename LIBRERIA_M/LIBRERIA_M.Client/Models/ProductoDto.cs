@@ -16,7 +16,8 @@ namespace LIBRERIA_M.Client.Models
         public string? Descripcion { get; set; }
 
         [Required(ErrorMessage = "El precio es obligatorio.")]
-        [Range(0.01, 9999999)]
+        [Range(0.01, 9999999,
+        ErrorMessage = "Ingrese un precio valido mayor a $0.")]
         public decimal PrecioUnitario { get; set; }
 
         [Required]

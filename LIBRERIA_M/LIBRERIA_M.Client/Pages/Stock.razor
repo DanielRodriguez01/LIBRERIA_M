@@ -12,7 +12,7 @@
 <div class="page-container">
 
     <h2 class="titulo-modulo">
-        STOCK
+        STOCK (LISTADO)
     </h2>
 
     <div class="card-principal">
@@ -29,6 +29,7 @@
                        type="text"
                        placeholder="🔍 Buscar producto por nombre o código..."
                        @bind="textoBusqueda"
+                       @bind:after="ReiniciarPaginaBusqueda"
                        @bind:event="oninput" />
 
                 <button class="btn-principal"
@@ -79,12 +80,17 @@
 
                     <tr>
 
-                        <th>Código</th>
-                        <th>Nombre</th>
-                        <th>Stock</th>
-                        <th>Estado</th>
-                        <th>Precio</th>
-                        <th>Acciones</th>
+                        <th class="col-codigo">Código</th>
+
+                        <th class="col-nombre">Nombre</th>
+
+                        <th class="col-stock">Stock</th>
+
+                        <th class="col-estado">Estado</th>
+
+                        <th class="col-precio">Precio</th>
+
+                        <th class="col-acciones">Acciones</th>
 
                     </tr>
 
@@ -98,11 +104,15 @@
                         {
                             <tr>
 
-                                <td>@producto.Codigo</td>
+                                <td class="col-codigo">
+                                    @producto.Codigo
+                                </td>
 
-                                <td>@producto.Nombre</td>
+                                <td class="col-nombre">
+                                    @producto.Nombre
+                                </td>
 
-                                <td>
+                                <td class="col-stock">
 
                                     @if (producto.StockBajo)
                                     {
@@ -117,7 +127,7 @@
 
                                 </td>
 
-                                <td>
+                                <td class="col-estado">
 
                                     @if (producto.Estado == "Disponible")
                                     {
@@ -146,17 +156,20 @@
 
                                 </td>
 
-                                <td>
+                                <td class="col-precio">
 
                                     @producto.PrecioUnitario.ToString("C")
 
                                 </td>
 
-                                <td>
+                                <td class="col-acciones">
 
                                     <button class="btn-editar"
+                                            title="Editar producto"
                                             @onclick="() => EditarProducto(producto.IdProducto)">
-                                        Editar
+
+                                        <i class="fa-solid fa-pen-to-square"></i>
+
                                     </button>
 
                                 </td>
@@ -181,6 +194,91 @@
 
             </table>
 
+            <!-- ========================= -->
+            <!-- Paginación -->
+            <!-- ========================= -->
+            @if (TotalPaginas > 1)
+            {
+                <div class="paginacion">
+
+                    <!-- Página anterior -->
+
+                    <button class="btn-pagina flecha"
+                            title="Página anterior"
+                            @onclick="() => CambiarPagina(paginaActual - 1)"
+                            disabled="@(paginaActual == 1)">
+
+                        <i class="fa-solid fa-chevron-left"></i>
+
+                    </button>
+
+
+                    <!-- Primera página -->
+                    @if (DebeMostrarPrimeraPagina)
+                    {
+                        <button class="@ObtenerClasePagina(1)"
+                                @onclick="() => CambiarPagina(1)">
+                            1
+                        </button>
+                    }
+
+
+                    <!-- Puntos suspensivos iniciales -->
+                    @if (DebeMostrarPuntosIniciales)
+                    {
+                        <span class="puntos-paginacion">
+                            ...
+                        </span>
+                    }
+
+
+                    <!-- Páginas cercanas a la actual -->
+                    @foreach (var pagina in PaginasVisibles)
+                    {
+                        <button class="@ObtenerClasePagina(pagina)"
+                                @onclick="() => CambiarPagina(pagina)">
+
+                            @pagina
+
+                        </button>
+                    }
+
+
+                    <!-- Puntos suspensivos finales -->
+                    @if (DebeMostrarPuntosFinales)
+                    {
+                        <span class="puntos-paginacion">
+                            ...
+                        </span>
+                    }
+
+
+                    <!-- Última página -->
+                    @if (DebeMostrarUltimaPagina)
+                    {
+                        <button class="@ObtenerClasePagina(TotalPaginas)"
+                                @onclick="() => CambiarPagina(TotalPaginas)">
+
+                            @TotalPaginas
+
+                        </button>
+                    }
+
+
+                    <!-- Página siguiente -->
+
+                    <button class="btn-pagina flecha"
+                            title="Página siguiente"
+                            @onclick="() => CambiarPagina(paginaActual + 1)"
+                            disabled="@(paginaActual == TotalPaginas)">
+
+                        <i class="fa-solid fa-chevron-right"></i>
+
+                    </button>
+
+                </div>
+            }
+
         </div>
 
     </div>
@@ -195,38 +293,106 @@
 
     private string filtroStock = "Todos";
 
+    private int paginaActual = 1;
+
+    private const int registrosPorPagina = 5;
+
+
+    // ==========================================
+    // CARGA INICIAL
+    // ==========================================
+
     protected override async Task OnInitializedAsync()
     {
         productos = await ProductoService.ObtenerProductos();
+
+        AjustarPaginaActual();
     }
 
-    private IEnumerable<ProductoDto> ProductosFiltrados =>
+
+    // ==========================================
+    // FILTRADO
+    // ==========================================
+
+    private IEnumerable<ProductoDto> ProductosFiltradosBase =>
         productos
             .Where(p =>
                 string.IsNullOrWhiteSpace(textoBusqueda)
-                || p.Nombre.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase)
-                || p.Codigo.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase))
-             .Where(p =>
-                    {
-                        switch (filtroStock)
-                        {
-                                            case "StockBajo":
-                                            return p.Estado == "Stock Bajo";
+                || p.Nombre.Contains(
+                    textoBusqueda,
+                    StringComparison.OrdinalIgnoreCase)
+                || p.Codigo.Contains(
+                    textoBusqueda,
+                    StringComparison.OrdinalIgnoreCase))
+            .Where(p =>
+            {
+                switch (filtroStock)
+                {
+                    case "StockBajo":
+                        return p.Estado == "Stock Bajo";
 
-                                            case "SinStock":
-                                            return p.Estado == "Sin Stock";
+                    case "SinStock":
+                        return p.Estado == "Sin Stock";
 
-                                            default:
-                                            return true;
-                        }
-                    });
+                    default:
+                        return true;
+                }
+            });
+
+
+    // ==========================================
+    // PRODUCTOS DE LA PÁGINA ACTUAL
+    // ==========================================
+
+    private IEnumerable<ProductoDto> ProductosFiltrados =>
+        ProductosFiltradosBase
+            .Skip((paginaActual - 1) * registrosPorPagina)
+            .Take(registrosPorPagina);
+
+
+    // ==========================================
+    // TOTAL DE PÁGINAS
+    // ==========================================
+
+    private int TotalPaginas =>
+        (int)Math.Ceiling(
+            ProductosFiltradosBase.Count()
+            / (double)registrosPorPagina);
+
+
+    // ==========================================
+    // CAMBIAR DE PÁGINA
+    // ==========================================
+
+    private void CambiarPagina(int pagina)
+    {
+        if (pagina < 1)
+            return;
+
+        if (pagina > TotalPaginas)
+            return;
+
+        paginaActual = pagina;
+    }
+
+
+    // ==========================================
+    // CAMBIAR FILTRO
+    // ==========================================
 
     private void CambiarFiltro(string filtro)
     {
-    filtroStock = filtro;
+        filtroStock = filtro;
 
-    StateHasChanged();
+        paginaActual = 1;
+
+        StateHasChanged();
     }
+
+
+    // ==========================================
+    // CLASE DE FILTRO
+    // ==========================================
 
     private string ObtenerClaseFiltro(string filtro)
     {
@@ -235,21 +401,149 @@
 
         return filtro switch
         {
-            "Todos" => "btn-filtro filtro-todos",
-            "StockBajo" => "btn-filtro filtro-stockbajo",
-            "SinStock" => "btn-filtro filtro-sinstock",
-            _ => "btn-filtro"
+            "Todos" =>
+                "btn-filtro filtro-todos",
+
+            "StockBajo" =>
+                "btn-filtro filtro-stockbajo",
+
+            "SinStock" =>
+                "btn-filtro filtro-sinstock",
+
+            _ =>
+                "btn-filtro"
         };
     }
 
+
+    // ==========================================
+    // NAVEGACIÓN
+    // ==========================================
+
     private void NuevoProducto()
     {
-
+        Navigation.NavigateTo("/stock/nuevo");
     }
+
 
     private void EditarProducto(int idProducto)
     {
+        // Lo implementaremos en el siguiente paso.
+    }
 
+
+    // ==========================================
+    // REINICIAR PAGINACIÓN AL BUSCAR
+    // ==========================================
+
+    private void ReiniciarPaginaBusqueda()
+    {
+        paginaActual = 1;
+
+        StateHasChanged();
+    }
+
+
+    // ==========================================
+    // AJUSTAR PÁGINA ACTUAL
+    // ==========================================
+
+    private void AjustarPaginaActual()
+    {
+        if (TotalPaginas == 0)
+        {
+            paginaActual = 1;
+            return;
+        }
+
+        if (paginaActual > TotalPaginas)
+        {
+            paginaActual = TotalPaginas;
+        }
+    }
+
+
+    // ==========================================
+    // PAGINACIÓN VISUAL
+    // ==========================================
+
+    private IEnumerable<int> PaginasVisibles
+    {
+        get
+        {
+            if (TotalPaginas <= 5)
+            {
+                return Enumerable.Range(1, TotalPaginas);
+            }
+
+            var inicio = Math.Max(2, paginaActual - 1);
+
+            var fin = Math.Min(
+                TotalPaginas - 1,
+                paginaActual + 1);
+
+            if (paginaActual <= 2)
+            {
+                inicio = 2;
+                fin = 4;
+            }
+
+            if (paginaActual >= TotalPaginas - 1)
+            {
+                inicio = TotalPaginas - 3;
+                fin = TotalPaginas - 1;
+            }
+
+            return Enumerable.Range(
+                inicio,
+                fin - inicio + 1);
+        }
+    }
+
+
+    // ==========================================
+    // MOSTRAR PRIMERA PÁGINA
+    // ==========================================
+
+    private bool DebeMostrarPrimeraPagina =>
+        TotalPaginas > 5;
+
+
+    // ==========================================
+    // MOSTRAR ÚLTIMA PÁGINA
+    // ==========================================
+
+    private bool DebeMostrarUltimaPagina =>
+        TotalPaginas > 5;
+
+
+    // ==========================================
+    // PUNTOS INICIALES
+    // ==========================================
+
+    private bool DebeMostrarPuntosIniciales =>
+        TotalPaginas > 5
+        && paginaActual > 3;
+
+
+    // ==========================================
+    // PUNTOS FINALES
+    // ==========================================
+
+    private bool DebeMostrarPuntosFinales =>
+        TotalPaginas > 5
+        && paginaActual < TotalPaginas - 2;
+
+
+    // ==========================================
+    // CLASE DE PÁGINA
+    // ==========================================
+
+    private string ObtenerClasePagina(int pagina)
+    {
+        return paginaActual == pagina
+            ? "btn-pagina activa"
+            : "btn-pagina";
     }
 
 }

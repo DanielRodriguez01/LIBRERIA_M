@@ -1,0 +1,270 @@
+﻿@page "/stock/nuevo"
+@rendermode InteractiveWebAssembly
+
+@using LIBRERIA_M.Client.Models
+@using LIBRERIA_M.Client.Services
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject NavigationManager Navigation
+@inject ProductoService ProductoService
+
+<PageTitle>Nuevo Producto</PageTitle>
+
+<div class="page-nuevo-producto">
+
+    <h3 class="titulo-seccion">
+
+        <button class="btn btn-link text-decoration-none"
+                @onclick="Volver">
+
+            <i class="fa-solid fa-arrow-left"></i>
+
+        </button>
+
+        Volver al listado de Stock
+
+    </h3>
+
+    <div class="card-formulario">
+
+        <EditForm Model="producto"
+                  OnValidSubmit="GuardarProducto">
+
+            <DataAnnotationsValidator />
+
+            <ValidationSummary />
+
+            <div class="row">
+
+                <!-- ========================= -->
+                <!-- Columna Izquierda -->
+                <!-- ========================= -->
+
+                <div class="col-md-6">
+
+                    <div class="mb-4">
+
+                        <label class="form-label">
+                            Código
+                        </label>
+
+                        <input class="form-control"
+                               value="(Automático)"
+                               disabled />
+
+                        <small class="text-muted">
+                            El código será generado automáticamente.
+                        </small>
+
+                    </div>
+
+                    <div class="mb-4">
+
+                        <label class="form-label">
+                            Nombre *
+                        </label>
+
+                        <InputText class="form-control"
+                                   @bind-Value="producto.Nombre" />
+
+                        <ValidationMessage For="@(() => producto.Nombre)" />
+
+                    </div>
+
+                    <div class="mb-4">
+
+                        <label class="form-label">
+                            Stock Actual *
+                        </label>
+
+                        <InputNumber class="form-control"
+                                     @bind-Value="producto.StockActual" />
+
+                    </div>
+
+                    <div class="mb-4">
+
+                        <label class="form-label">
+                            Stock Mínimo *
+                        </label>
+
+                        <InputNumber class="form-control"
+                                     @bind-Value="producto.StockMinimo" />
+
+                        <small class="text-muted">
+
+                            Ingrese la cantidad mínima de stock.
+                            Cuando el stock actual sea igual o menor,
+                            el sistema marcará automáticamente el producto
+                            como Stock Bajo.
+
+                        </small>
+
+                    </div>
+
+                    <div class="mb-4">
+
+                        <label class="form-label">
+                            Precio Unitario *
+                        </label>
+
+                        <InputNumber class="form-control"
+                                     @bind-Value="producto.PrecioUnitario" />
+
+                        <ValidationMessage For="@(() => producto.PrecioUnitario)" />
+
+                    </div>
+
+                </div>
+
+                <!-- ========================= -->
+                <!-- Columna Derecha -->
+                <!-- ========================= -->
+
+                <div class="col-md-6">
+
+                    <div class="card-imagen">
+
+                        <h5>Imagen del Producto</h5>
+
+                        <i class="fa-regular fa-image fa-4x"></i>
+
+                        <br />
+
+                        <button type="button"
+                                class="btn-subir">
+
+                            Subir Imagen
+
+                        </button>
+
+                    </div>
+
+                    <div class="mt-4 mb-4">
+
+                        <label class="form-label">
+
+                            Estado del Stock
+
+                        </label>
+
+                        <div class="mt-2">
+
+                            <span class="@ObtenerClaseEstado()">
+
+                                @EstadoCalculado
+
+                            </span>
+
+                        </div>
+
+                        <small class="text-muted">
+
+                            El estado se calcula automáticamente según
+                            el Stock Actual y el Stock Mínimo.
+
+                        </small>
+
+                    </div>
+
+                    <div class="mb-4">
+
+                        <label class="form-label">
+
+                            Descripción (Opcional)
+
+                        </label>
+
+                        <InputTextArea class="form-control"
+                                       rows="5"
+                                       @bind-Value="producto.Descripcion" />
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="text-end mt-4">
+
+                <button type="button"
+                        class="btn-cancelar me-3"
+                        @onclick="Volver">
+
+                    Cancelar
+
+                </button>
+
+                <button type="submit"
+                        class="btn-confirmar">
+
+                    Confirmar
+
+                </button>
+
+            </div>
+
+        </EditForm>
+
+    </div>
+
+</div>
+
+@code
+{
+
+    private ProductoDto producto = new()
+    {
+        StockActual = 0,
+        StockMinimo = 5,
+        Estado = "Activo",
+        CostoPromedio = 0
+    };
+
+    private string EstadoCalculado
+    {
+        get
+        {
+            if (producto.StockActual == 0)
+                return "Sin Stock";
+
+            if (producto.StockActual <= producto.StockMinimo)
+                return "Stock Bajo";
+
+            return "Disponible";
+        }
+    }
+
+    private string ObtenerClaseEstado()
+    {
+        return EstadoCalculado switch
+        {
+            "Disponible" => "estado-disponible",
+            "Stock Bajo" => "estado-stock-bajo",
+            _ => "estado-sin-stock"
+        };
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/stock");
+    }
+
+    private async Task GuardarProducto()
+    {
+        try
+        {
+            producto.Estado = "Activo";
+            producto.CostoPromedio = 0;
+
+            await ProductoService.CrearProducto(producto);
+
+            Navigation.NavigateTo("/stock");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+}

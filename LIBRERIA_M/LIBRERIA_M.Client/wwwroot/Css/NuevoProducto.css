@@ -1,0 +1,107 @@
+﻿.page-nuevo-producto {
+    padding: 30px;
+}
+
+.card-formulario {
+    background: #f5f5f5;
+    border-radius: 18px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,.08);
+}
+
+.titulo-seccion {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 25px;
+}
+
+.form-label {
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.form-control {
+    border-radius: 14px;
+    height: 48px;
+}
+
+textarea.form-control {
+    height: 120px;
+    resize: none;
+}
+
+.card-imagen {
+    border-radius: 18px;
+    border: 2px dashed #d9d9d9;
+    padding: 30px;
+    text-align: center;
+    background: white;
+}
+
+    .card-imagen i {
+        color: #999;
+        margin-bottom: 20px;
+    }
+
+.estado-disponible {
+    background: #9CF17A;
+    color: #198a00;
+    padding: 10px 25px;
+    border-radius: 30px;
+    font-weight: bold;
+}
+
+.estado-stock-bajo {
+    background: #FFF176;
+    color: #7d6800;
+    padding: 10px 25px;
+    border-radius: 30px;
+    font-weight: bold;
+}
+
+.estado-sin-stock {
+    background: #F8B4B4;
+    color: #d10000;
+    padding: 10px 25px;
+    border-radius: 30px;
+    font-weight: bold;
+}
+
+.btn-confirmar {
+    background: #87EB71;
+    border: none;
+    color: #1d6800;
+    font-weight: bold;
+    border-radius: 30px;
+    padding: 12px 35px;
+}
+
+    .btn-confirmar:hover {
+        background: #74dd5c;
+    }
+
+.btn-cancelar {
+    background: #F6B3B3;
+    border: none;
+    color: #c00000;
+    font-weight: bold;
+    border-radius: 30px;
+    padding: 12px 35px;
+}
+
+    .btn-cancelar:hover {
+        background: #ee9e9e;
+    }
+
+.btn-subir {
+    background: #39D5E8;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 30px;
+    font-weight: bold;
+}
+
+    .btn-subir:hover {
+        background: #27bfd2;
+    }

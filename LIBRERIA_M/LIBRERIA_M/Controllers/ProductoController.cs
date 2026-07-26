@@ -37,9 +37,16 @@ namespace LIBRERIA_M.Controllers
         [HttpPost]
         public async Task<IActionResult> Crear([FromBody] ProductoDto producto)
         {
-            await _productoRepository.CrearProducto(producto);
+            try
+            {
+                await _productoRepository.CrearProducto(producto);
 
-            return Ok();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.ToString());
+            }
         }
 
         [HttpPut]

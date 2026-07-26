@@ -29,9 +29,11 @@ public class ProductoService
 
     public async Task CrearProducto(ProductoDto producto)
     {
-        await _http.PostAsJsonAsync(
+        var response = await _http.PostAsJsonAsync(
             "api/producto",
             producto);
+
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task ActualizarProducto(ProductoDto producto)
