@@ -17,15 +17,17 @@ namespace LIBRERIA_M.Client.Models
 
         [Required(ErrorMessage = "El precio es obligatorio.")]
         [Range(0.01, 9999999,
-        ErrorMessage = "Ingrese un precio valido mayor a $0.")]
+            ErrorMessage = "Ingrese un precio válido mayor a $0.")]
         public decimal PrecioUnitario { get; set; }
 
-        [Required]
-        [Range(0, 999999)]
+        [Required(ErrorMessage = "El stock actual es obligatorio.")]
+        [Range(0, 999999,
+            ErrorMessage = "El Stock Actual debe estar entre 0 y 999999.")]
         public int StockActual { get; set; }
 
-        [Required]
-        [Range(0, 999999)]
+        [Required(ErrorMessage = "El stock mínimo es obligatorio.")]
+        [Range(0, 999999,
+            ErrorMessage = "El Stock Mínimo debe estar entre 0 y 999999.")]
         public int StockMinimo { get; set; }
 
         [Required]
@@ -37,7 +39,7 @@ namespace LIBRERIA_M.Client.Models
 
         public string? Imagen { get; set; }
 
-        public bool StockBajo => StockActual <= StockMinimo;
-
+        public bool StockBajo =>
+            StockActual > 0 && StockActual <= StockMinimo;
     }
 }

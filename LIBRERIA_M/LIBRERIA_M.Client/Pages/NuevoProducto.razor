@@ -1,4 +1,5 @@
 ﻿@page "/stock/nuevo"
+@page "/stock/editar/{IdProducto:int}"
 @rendermode InteractiveWebAssembly
 
 @using LIBRERIA_M.Client.Models
@@ -8,20 +9,23 @@
 @inject NavigationManager Navigation
 @inject ProductoService ProductoService
 
-<PageTitle>Nuevo Producto</PageTitle>
+<PageTitle>
+    @(EsEdicion ? "Editar Producto" : "Nuevo Producto")
+</PageTitle>
 
 <div class="page-nuevo-producto">
 
     <h3 class="titulo-seccion">
 
-        <button class="btn btn-link text-decoration-none"
-                @onclick="Volver">
+        <button class="btn btn-link text-decoration-none btn-volver"
+                @onclick="Volver"
+                title="Volver al listado de Stock">
 
             <i class="fa-solid fa-arrow-left"></i>
 
         </button>
 
-        Volver al listado de Stock
+        @(EsEdicion ? "Editar Producto" : "Nuevo Producto")
 
     </h3>
 
@@ -31,8 +35,6 @@
                   OnValidSubmit="GuardarProducto">
 
             <DataAnnotationsValidator />
-
-            <ValidationSummary />
 
             <div class="row">
 
@@ -48,12 +50,34 @@
                             Código
                         </label>
 
-                        <input class="form-control"
-                               value="(Automático)"
-                               disabled />
+                        @if (EsEdicion)
+                        {
+                            <input class="form-control"
+                                   value="@producto.Codigo"
+                                   disabled />
+                        }
+                        else
+                        {
+                            <input class="form-control"
+                                   value="(Automático)"
+                                   disabled />
+                        }
 
                         <small class="text-muted">
-                            El código será generado automáticamente.
+
+                            @if (EsEdicion)
+                            {
+                                <span>
+                                    El código del producto no puede modificarse.
+                                </span>
+                            }
+                            else
+                            {
+                                <span>
+                                    El código será generado automáticamente.
+                                </span>
+                            }
+
                         </small>
 
                     </div>
@@ -78,7 +102,11 @@
                         </label>
 
                         <InputNumber class="form-control"
-                                     @bind-Value="producto.StockActual" />
+                                     @bind-Value="producto.StockActual"
+                                     min="0"
+                                     max="999999" />
+
+                        <ValidationMessage For="@(() => producto.StockActual)" />
 
                     </div>
 
@@ -89,7 +117,11 @@
                         </label>
 
                         <InputNumber class="form-control"
-                                     @bind-Value="producto.StockMinimo" />
+                                     @bind-Value="producto.StockMinimo"
+                                     min="0"
+                                     max="999999" />
+
+                        <ValidationMessage For="@(() => producto.StockMinimo)" />
 
                         <small class="text-muted">
 
@@ -127,33 +159,47 @@
 
                         <h5>Imagen del Producto</h5>
 
-                        <i class="fa-regular fa-image fa-4x"></i>
+                        @if (!string.IsNullOrEmpty(imagenVistaPrevia))
+                        {
+                            <img src="@imagenVistaPrevia"
+                                 class="imagen-preview"
+                                 alt="Vista previa del producto" />
+                        }
+                        else
+                        {
+                            <i class="fa-regular fa-image fa-4x icono-imagen"></i>
+                        }
 
-                        <br />
+                        <InputFile id="input-imagen"
+                                   OnChange="SeleccionarImagen"
+                                   accept="image/png,image/jpeg,image/jpg"
+                                   class="input-imagen" />
 
-                        <button type="button"
-                                class="btn-subir">
+                        <label for="input-imagen"
+                               class="btn-subir">
 
-                            Subir Imagen
+                            <i class="fa-solid fa-upload"></i>
 
-                        </button>
+                            <span>Subir Imagen</span>
+
+                        </label>
+
+                        <small class="texto-imagen">
+                            Formatos permitidos: JPG, JPEG o PNG. Máximo 5 MB.
+                        </small>
 
                     </div>
 
                     <div class="mt-4 mb-4">
 
                         <label class="form-label">
-
                             Estado del Stock
-
                         </label>
 
                         <div class="mt-2">
 
                             <span class="@ObtenerClaseEstado()">
-
                                 @EstadoCalculado
-
                             </span>
 
                         </div>
@@ -170,9 +216,7 @@
                     <div class="mb-4">
 
                         <label class="form-label">
-
                             Descripción (Opcional)
-
                         </label>
 
                         <InputTextArea class="form-control"
@@ -198,7 +242,7 @@
                 <button type="submit"
                         class="btn-confirmar">
 
-                    Confirmar
+                    @(EsEdicion ? "Guardar Cambios" : "Confirmar")
 
                 </button>
 
@@ -212,6 +256,8 @@
 
 @code
 {
+    [Parameter]
+    public int? IdProducto { get; set; }
 
     private ProductoDto producto = new()
     {
@@ -220,6 +266,137 @@
         Estado = "Activo",
         CostoPromedio = 0
     };
+
+    private string? imagenVistaPrevia;
+
+    private bool EsEdicion => IdProducto.HasValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IdProducto.HasValue)
+        {
+            var productoExistente =
+                await ProductoService.ObtenerProductoPorId(IdProducto.Value);
+
+            if (productoExistente == null)
+            {
+                Navigation.NavigateTo("/stock");
+                return;
+            }
+
+            producto = productoExistente;
+
+            // ==========================================
+            // CARGAR IMAGEN EXISTENTE
+            // ==========================================
+
+            if (!string.IsNullOrWhiteSpace(producto.Imagen))
+            {
+                imagenVistaPrevia = PrepararImagen(producto.Imagen);
+            }
+        }
+    }
+
+    // ==========================================
+    // PREPARAR IMAGEN PARA MOSTRAR
+    // ==========================================
+
+    private string PrepararImagen(string imagen)
+    {
+        // Si ya contiene el Data URI completo,
+        // no necesitamos modificarlo.
+
+        if (imagen.StartsWith("data:image/",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            return imagen;
+        }
+
+        // Si solamente tenemos Base64, usamos JPEG
+        // como tipo predeterminado.
+
+        return $"data:image/jpeg;base64,{imagen}";
+    }
+
+    // ==========================================
+    // SELECCIONAR IMAGEN
+    // ==========================================
+
+    private async Task SeleccionarImagen(InputFileChangeEventArgs e)
+    {
+        var archivo = e.File;
+
+        if (archivo == null)
+            return;
+
+        // ==========================================
+        // LÍMITE DE 5 MB
+        // ==========================================
+
+        const long maximoBytes = 5 * 1024 * 1024;
+
+        if (archivo.Size > maximoBytes)
+        {
+            Console.WriteLine(
+                "La imagen no puede superar los 5 MB.");
+
+            return;
+        }
+
+        // ==========================================
+        // TIPOS PERMITIDOS
+        // ==========================================
+
+        var tiposPermitidos = new[]
+        {
+            "image/png",
+            "image/jpeg",
+            "image/jpg"
+        };
+
+        if (!tiposPermitidos.Contains(archivo.ContentType))
+        {
+            Console.WriteLine(
+                "El archivo seleccionado no es una imagen válida.");
+
+            return;
+        }
+
+        // ==========================================
+        // LEER ARCHIVO
+        // ==========================================
+
+        using var stream =
+            archivo.OpenReadStream(maxAllowedSize: maximoBytes);
+
+        using var memoryStream = new MemoryStream();
+
+        await stream.CopyToAsync(memoryStream);
+
+        var buffer = memoryStream.ToArray();
+
+        // ==========================================
+        // CONVERTIR A BASE64
+        // ==========================================
+
+        var base64 = Convert.ToBase64String(buffer);
+
+        // ==========================================
+        // CREAR DATA URI
+        // ==========================================
+
+        imagenVistaPrevia =
+            $"data:{archivo.ContentType};base64,{base64}";
+
+        // Guardamos la imagen dentro del DTO
+        // para que GuardarProducto la envíe al servidor.
+
+        producto.Imagen = imagenVistaPrevia;
+    }
+
+    // ==========================================
+    // ESTADO DEL STOCK
+    // ==========================================
 
     private string EstadoCalculado
     {
@@ -245,19 +422,35 @@
         };
     }
 
+    // ==========================================
+    // VOLVER
+    // ==========================================
+
     private void Volver()
     {
         Navigation.NavigateTo("/stock");
     }
+
+    // ==========================================
+    // GUARDAR PRODUCTO
+    // ==========================================
 
     private async Task GuardarProducto()
     {
         try
         {
             producto.Estado = "Activo";
-            producto.CostoPromedio = 0;
 
-            await ProductoService.CrearProducto(producto);
+            if (EsEdicion)
+            {
+                await ProductoService.ActualizarProducto(producto);
+            }
+            else
+            {
+                producto.CostoPromedio = 0;
+
+                await ProductoService.CrearProducto(producto);
+            }
 
             Navigation.NavigateTo("/stock");
         }
@@ -266,5 +459,4 @@
             Console.WriteLine(ex.Message);
         }
     }
-
 }
