@@ -1,13 +1,14 @@
 ﻿@page "/stock"
-@rendermode InteractiveWebAssembly
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 @using LIBRERIA_M.Client.Models
 @using LIBRERIA_M.Client.Services
+@using System.Globalization
 
 @inject ProductoService ProductoService
 @inject NavigationManager Navigation
 
-<PageTitle>Stock</PageTitle>
+<PageTitle>Stock - Librería</PageTitle>
 
 <div class="page-container">
 
@@ -51,17 +52,17 @@
 
                 <div class="grupo-filtros">
 
-                    <button class="@(ObtenerClaseFiltro("Todos"))"
+                    <button class="@ObtenerClaseFiltro("Todos")"
                             @onclick='() => CambiarFiltro("Todos")'>
                         Todos
                     </button>
 
-                    <button class="@(ObtenerClaseFiltro("StockBajo"))"
+                    <button class="@ObtenerClaseFiltro("StockBajo")"
                             @onclick='() => CambiarFiltro("StockBajo")'>
                         Stock Bajo
                     </button>
 
-                    <button class="@(ObtenerClaseFiltro("SinStock"))"
+                    <button class="@ObtenerClaseFiltro("SinStock")"
                             @onclick='() => CambiarFiltro("SinStock")'>
                         Sin Stock
                     </button>
@@ -105,7 +106,7 @@
                             <tr>
 
                                 <td class="col-codigo">
-                                    @producto.Codigo
+                                    @(string.IsNullOrWhiteSpace(producto.Codigo) ? "-" : producto.Codigo)
                                 </td>
 
                                 <td class="col-nombre">
@@ -129,36 +130,30 @@
 
                                 <td class="col-estado">
 
-                                    @if (producto.Estado == "Disponible")
+                                    @switch (producto.Estado)
                                     {
-                                        <span class="estado-disponible">
-                                            Disponible
-                                        </span>
-                                    }
-                                    else if (producto.Estado == "Stock Bajo")
-                                    {
-                                        <span class="estado-stockbajo">
-                                            Stock Bajo
-                                        </span>
-                                    }
-                                    else if (producto.Estado == "Sin Stock")
-                                    {
-                                        <span class="estado-sinstock">
-                                            Sin Stock
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span>
-                                            @producto.Estado
-                                        </span>
+                                        case "Disponible":
+                                            <span class="estado-disponible">Disponible</span>
+                                            break;
+
+                                        case "Stock Bajo":
+                                            <span class="estado-stockbajo">Stock Bajo</span>
+                                            break;
+
+                                        case "Sin Stock":
+                                            <span class="estado-sinstock">Sin Stock</span>
+                                            break;
+
+                                        default:
+                                            <span>@(string.IsNullOrWhiteSpace(producto.Estado) ? "Sin estado" : producto.Estado)</span>
+                                            break;
                                     }
 
                                 </td>
 
                                 <td class="col-precio">
 
-                                    @producto.PrecioUnitario.ToString("C")
+                                    @producto.PrecioUnitario.ToString("C", formatoMoneda)
 
                                 </td>
 
@@ -297,6 +292,19 @@
 
     private const int registrosPorPagina = 5;
 
+    // MODIFICACIÓN: Formato de moneda localizado (Argentina) con punto para miles, coma para decimales y símbolo $ al final.
+    private readonly CultureInfo formatoMoneda = new CultureInfo("es-AR")
+    {
+        NumberFormat = new NumberFormatInfo
+        {
+            CurrencySymbol = "$",
+            CurrencyPositivePattern = 3, // Pattern: n $
+            CurrencyNegativePattern = 8, // Pattern: -n $
+            CurrencyGroupSeparator = ".",
+            CurrencyDecimalSeparator = ","
+        }
+    };
+
 
     // ==========================================
     // CARGA INICIAL
@@ -304,26 +312,23 @@
 
     protected override async Task OnInitializedAsync()
     {
-        productos = await ProductoService.ObtenerProductos();
+        var resultado = await ProductoService.ObtenerProductos();
+        productos = resultado ?? new List<ProductoDto>();
 
         AjustarPaginaActual();
     }
 
 
     // ==========================================
-    // FILTRADO
+    // FILTRADO BASE
     // ==========================================
 
     private IEnumerable<ProductoDto> ProductosFiltradosBase =>
         productos
             .Where(p =>
                 string.IsNullOrWhiteSpace(textoBusqueda)
-                || p.Nombre.Contains(
-                    textoBusqueda,
-                    StringComparison.OrdinalIgnoreCase)
-                || p.Codigo.Contains(
-                    textoBusqueda,
-                    StringComparison.OrdinalIgnoreCase))
+                || (p.Nombre?.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (p.Codigo?.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase) ?? false))
             .Where(p =>
             {
                 switch (filtroStock)
@@ -354,10 +359,14 @@
     // TOTAL DE PÁGINAS
     // ==========================================
 
-    private int TotalPaginas =>
-        (int)Math.Ceiling(
-            ProductosFiltradosBase.Count()
-            / (double)registrosPorPagina);
+    private int TotalPaginas
+    {
+        get
+        {
+            var totalRegistros = ProductosFiltradosBase.Count();
+            return totalRegistros == 0 ? 1 : (int)Math.Ceiling(totalRegistros / (double)registrosPorPagina);
+        }
+    }
 
 
     // ==========================================
@@ -366,10 +375,7 @@
 
     private void CambiarPagina(int pagina)
     {
-        if (pagina < 1)
-            return;
-
-        if (pagina > TotalPaginas)
+        if (pagina < 1 || pagina > TotalPaginas)
             return;
 
         paginaActual = pagina;
@@ -383,10 +389,7 @@
     private void CambiarFiltro(string filtro)
     {
         filtroStock = filtro;
-
         paginaActual = 1;
-
-        StateHasChanged();
     }
 
 
@@ -401,17 +404,10 @@
 
         return filtro switch
         {
-            "Todos" =>
-                "btn-filtro filtro-todos",
-
-            "StockBajo" =>
-                "btn-filtro filtro-stockbajo",
-
-            "SinStock" =>
-                "btn-filtro filtro-sinstock",
-
-            _ =>
-                "btn-filtro"
+            "Todos" => "btn-filtro filtro-todos",
+            "StockBajo" => "btn-filtro filtro-stockbajo",
+            "SinStock" => "btn-filtro filtro-sinstock",
+            _ => "btn-filtro"
         };
     }
 
@@ -439,8 +435,6 @@
     private void ReiniciarPaginaBusqueda()
     {
         paginaActual = 1;
-
-        StateHasChanged();
     }
 
 
@@ -450,15 +444,14 @@
 
     private void AjustarPaginaActual()
     {
-        if (TotalPaginas == 0)
-        {
-            paginaActual = 1;
-            return;
-        }
-
         if (paginaActual > TotalPaginas)
         {
             paginaActual = TotalPaginas;
+        }
+
+        if (paginaActual < 1)
+        {
+            paginaActual = 1;
         }
     }
 
@@ -477,10 +470,7 @@
             }
 
             var inicio = Math.Max(2, paginaActual - 1);
-
-            var fin = Math.Min(
-                TotalPaginas - 1,
-                paginaActual + 1);
+            var fin = Math.Min(TotalPaginas - 1, paginaActual + 1);
 
             if (paginaActual <= 2)
             {
@@ -494,56 +484,26 @@
                 fin = TotalPaginas - 1;
             }
 
-            return Enumerable.Range(
-                inicio,
-                fin - inicio + 1);
+            return Enumerable.Range(inicio, fin - inicio + 1);
         }
     }
 
 
     // ==========================================
-    // MOSTRAR PRIMERA PÁGINA
+    // VISIBILIDAD DE BOTONES DE PAGINACIÓN
     // ==========================================
 
-    private bool DebeMostrarPrimeraPagina =>
-        TotalPaginas > 5;
+    private bool DebeMostrarPrimeraPagina => TotalPaginas > 5 && !PaginasVisibles.Contains(1);
 
+    private bool DebeMostrarUltimaPagina => TotalPaginas > 5 && !PaginasVisibles.Contains(TotalPaginas);
 
-    // ==========================================
-    // MOSTRAR ÚLTIMA PÁGINA
-    // ==========================================
+    private bool DebeMostrarPuntosIniciales => TotalPaginas > 5 && PaginasVisibles.FirstOrDefault() > 2;
 
-    private bool DebeMostrarUltimaPagina =>
-        TotalPaginas > 5;
-
-
-    // ==========================================
-    // PUNTOS INICIALES
-    // ==========================================
-
-    private bool DebeMostrarPuntosIniciales =>
-        TotalPaginas > 5
-        && paginaActual > 3;
-
-
-    // ==========================================
-    // PUNTOS FINALES
-    // ==========================================
-
-    private bool DebeMostrarPuntosFinales =>
-        TotalPaginas > 5
-        && paginaActual < TotalPaginas - 2;
-
-
-    // ==========================================
-    // CLASE DE PÁGINA
-    // ==========================================
+    private bool DebeMostrarPuntosFinales => TotalPaginas > 5 && PaginasVisibles.LastOrDefault() < TotalPaginas - 1;
 
     private string ObtenerClasePagina(int pagina)
     {
-        return paginaActual == pagina
-            ? "btn-pagina activa"
-            : "btn-pagina";
+        return paginaActual == pagina ? "btn-pagina activa" : "btn-pagina";
     }
 
 }

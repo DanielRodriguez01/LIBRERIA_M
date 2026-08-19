@@ -1,0 +1,298 @@
+﻿/* ==========================================
+   CONTENEDOR Y TÍTULO
+========================================== */
+.page-container {
+    padding: 30px;
+    background-color: #F4F6F8;
+    min-height: 100vh;
+}
+
+.titulo-modulo {
+    font-size: 26px;
+    font-weight: 700; /* Sin negrita excesiva */
+    color: #111827;
+    margin-bottom: 25px;
+    letter-spacing: -0.5px;
+}
+
+/* ==========================================
+   TARJETA GLOBAL Y PANEL INTERNO
+========================================== */
+.card-principal {
+    background-color: #FFFFFF;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.panel-interno {
+    background-color: #F8F9FA;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ==========================================
+   BARRA SUPERIOR (BUSCADOR Y BOTÓN NUEVO)
+========================================== */
+.toolbar-acciones {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.contenedor-busqueda {
+    position: relative;
+    flex-grow: 1;
+}
+
+.input-busqueda {
+    width: 100%;
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 12px 16px 12px 42px;
+    font-size: 14px;
+    color: #374151;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+    .input-busqueda:focus {
+        border-color: #3B82F6;
+    }
+
+    .input-busqueda::placeholder {
+        color: #9CA3AF;
+    }
+
+.icono-busqueda {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6B7280;
+    font-size: 15px;
+}
+
+.btn-principal {
+    background-color: #3B82F6;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s ease;
+}
+
+    .btn-principal:hover {
+        background-color: #2563EB;
+    }
+
+/* ==========================================
+   FILTROS DE ESTADO (ESPACIADOS Y COLORES)
+========================================== */
+.filtros {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 22px; /* Separación con la barra de búsqueda */
+    margin-bottom: 22px; /* Separación con la tabla */
+}
+
+.titulo-filtro {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.grupo-filtros {
+    display: flex;
+    gap: 10px; /* Separación entre los botones de filtro */
+}
+
+.btn-filtro {
+    border: none;
+    background-color: #E5E7EB;
+    color: #374151;
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+    /* Estados activos según el filtro seleccionado */
+    .btn-filtro.activo-todos {
+        background-color: #2563EB;
+        color: #FFFFFF;
+    }
+
+    .btn-filtro.activo-aldia {
+        background-color: #86EFAC;
+        color: #166534;
+    }
+
+    .btn-filtro.activo-condeuda {
+        background-color: #FCA5A5;
+        color: #991B1B;
+    }
+
+/* ==========================================
+   TABLA DE CLIENTES
+========================================== */
+.tabla-modulo {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #FFFFFF;
+}
+
+    .tabla-modulo thead tr {
+        background-color: #EAEAEA;
+    }
+
+        .tabla-modulo thead tr th {
+            color: #111827;
+            font-weight: 700;
+            padding: 14px 18px;
+            font-size: 14px;
+            border: none;
+            text-align: left;
+        }
+
+            .tabla-modulo thead tr th:first-child {
+                border-top-left-radius: 12px;
+                border-bottom-left-radius: 12px;
+            }
+
+            .tabla-modulo thead tr th:last-child {
+                border-top-right-radius: 12px;
+                border-bottom-right-radius: 12px;
+            }
+
+    .tabla-modulo tbody tr {
+        border-bottom: 1px solid #F3F4F6;
+    }
+
+        .tabla-modulo tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .tabla-modulo tbody tr td {
+            padding: 16px 18px;
+            vertical-align: middle;
+            font-size: 14px;
+            color: #374151;
+        }
+
+.col-nombre {
+    font-weight: 500;
+}
+
+/* ==========================================
+   BADGES DE ESTADO
+========================================== */
+.badge-estado {
+    display: inline-block;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.estado-aldia {
+    background-color: #86EFAC;
+    color: #166534;
+}
+
+.estado-condeuda {
+    background-color: #FCA5A5;
+    color: #991B1B;
+}
+
+/* ==========================================
+   BOTONES DE ACCIÓN
+========================================== */
+.acciones-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-accion {
+    background: transparent;
+    border: none;
+    font-size: 17px;
+    color: #3B82F6;
+    cursor: pointer;
+    padding: 4px;
+    transition: transform 0.15s ease;
+}
+
+    .btn-accion:hover {
+        transform: scale(1.15);
+    }
+
+    .btn-accion.btn-eliminar {
+        color: #EF4444;
+    }
+
+/* ==========================================
+   PIE DE TABLA Y PAGINACIÓN
+========================================== */
+.pie-tabla {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+}
+
+.info-registros {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+.paginacion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-pagina {
+    border: none;
+    background: transparent;
+    color: #374151;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+    .btn-pagina.activa {
+        background-color: #3B82F6;
+        color: #FFFFFF;
+    }
+
+    .btn-pagina:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
+.sin-registros {
+    text-align: center;
+    padding: 40px 20px;
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    color: #6B7280;
+    font-weight: 600;
+}

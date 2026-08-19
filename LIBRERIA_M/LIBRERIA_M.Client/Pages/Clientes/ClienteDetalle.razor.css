@@ -1,0 +1,157 @@
+﻿/* =======================================================
+   ESTILOS GENERALES Y BOTONES SUPERIORES
+======================================================= */
+.btn-editar-top {
+    background-color: #39D5E8;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 22px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 6px rgba(57, 213, 232, 0.3);
+}
+
+    .btn-editar-top:hover {
+        background-color: #27bfd2;
+        transform: translateY(-1px);
+    }
+
+    .btn-editar-top:active {
+        transform: translateY(0);
+    }
+
+/* =======================================================
+   TARJETAS SUPERIORES (INFORMACIÓN Y RESUMEN FINANCIERO)
+======================================================= */
+.card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #eef2f5;
+}
+
+/* Tipografía de la información personal */
+.lh-lg strong {
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.lh-lg div {
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+/* Círculos con íconos financieros ($) */
+.bg-success {
+    background-color: #2ecc71 !important;
+}
+
+.bg-danger {
+    background-color: #ff5252 !important;
+}
+
+/* Badges de Estado Contable */
+.badge.bg-danger {
+    background-color: #ff4757 !important;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.badge.bg-success {
+    background-color: #2ed573 !important;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+/* =======================================================
+   PESTAÑAS / TABS DE NAVEGACIÓN INTERNA
+======================================================= */
+.nav-tabs {
+    border-bottom: 2px solid #e9ecef;
+}
+
+    .nav-tabs .nav-link {
+        color: #2c3e50;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 10px 16px;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+    }
+
+        .nav-tabs .nav-link:hover {
+            border-color: transparent;
+            color: #00c2ff;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #00c2ff;
+            background-color: transparent;
+            border-bottom: 3px solid #00c2ff;
+        }
+
+/* =======================================================
+   TABLAS Y REGISTROS
+======================================================= */
+.table thead tr {
+    border-bottom: 2px solid #e9ecef;
+}
+
+.table th {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.table td {
+    font-size: 0.9rem;
+    color: #333;
+}
+
+/* =======================================================
+   PANEL LATERAL: REGISTRAR PAGO
+======================================================= */
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    color: #6c757d;
+}
+
+.btn-info {
+    background-color: #00c2ff !important;
+    border-color: #00c2ff !important;
+    border-radius: 20px;
+}
+
+    .btn-info:hover {
+        background-color: #00a8df !important;
+        border-color: #00a8df !important;
+    }
+
+.btn-light {
+    border-radius: 20px;
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+    .btn-light:hover {
+        background-color: #d4d4d4;
+    }
+
+.btn-outline-danger {
+    border-radius: 20px;
+}
+
+/* Formulario de inputs */
+.form-control, .form-select {
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+    .form-control:focus, .form-select:focus {
+        border-color: #00c2ff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 194, 255, 0.25);
+    }

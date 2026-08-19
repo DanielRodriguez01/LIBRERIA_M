@@ -1,7 +1,6 @@
 ﻿/* ==========================================
    CONTENEDOR GENERAL
 ========================================== */
-
 .page-container {
     padding: 35px;
     background: #F5F5F5;
@@ -11,7 +10,6 @@
 /* ==========================================
    TITULO
 ========================================== */
-
 .titulo-modulo {
     font-size: 34px;
     font-weight: bold;
@@ -22,7 +20,6 @@
 /* ==========================================
    TARJETAS
 ========================================== */
-
 .card-principal {
     background: white;
     border-radius: 16px;
@@ -39,7 +36,6 @@
 /* ==========================================
    TOOLBAR
 ========================================== */
-
 .toolbar {
     display: flex;
     justify-content: space-between;
@@ -68,7 +64,6 @@
 /* ==========================================
    BOTON NUEVO PRODUCTO
 ========================================== */
-
 .btn-principal {
     background: #3A86FF;
     color: white;
@@ -79,6 +74,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: .20s;
+    white-space: nowrap;
 }
 
     .btn-principal:hover {
@@ -88,7 +84,6 @@
 /* ==========================================
    FILTROS
 ========================================== */
-
 .filtros {
     display: flex;
     align-items: center;
@@ -132,13 +127,14 @@
         background: #1632D8;
     }
 
+/* CAMBIO: Mantiene el color amarillo vibrante unificado para el botón de filtro "Stock Bajo" */
 .filtro-stockbajo {
-    background: #FFF176;
-    color: #444;
+    background-color: #FFD56B; /* Amarillo vibrante unificado */
+    color: #C26300; /* Texto marrón oscuro unificado */
 }
 
     .filtro-stockbajo:hover {
-        background: #FFE54D;
+        background-color: #F7CB61; /* Un amarillo ligeramente más oscuro para el hover */
     }
 
 .filtro-sinstock {
@@ -153,7 +149,6 @@
 /* ==========================================
    TABLA
 ========================================== */
-
 .tabla-stock {
     width: 100%;
     border-collapse: collapse;
@@ -187,19 +182,24 @@
     }
 
 /* ==========================================
-   ANCHO DE COLUMNAS
+   ANCHO Y ALINEACIÓN DE COLUMNAS
 ========================================== */
-
 .col-codigo {
     width: 110px;
+    text-align: left;
 }
 
 .col-nombre {
     width: 340px;
+    text-align: left;
 }
 
 .col-stock {
     width: 100px;
+    text-align: center;
+}
+
+th.col-stock, td.col-stock {
     text-align: center;
 }
 
@@ -208,8 +208,16 @@
     text-align: center;
 }
 
+th.col-estado, td.col-estado {
+    text-align: center;
+}
+
 .col-precio {
     width: 170px;
+    text-align: right;
+}
+
+th.col-precio, td.col-precio {
     text-align: right;
     padding-right: 25px !important;
 }
@@ -219,10 +227,13 @@
     text-align: center;
 }
 
+th.col-acciones, td.col-acciones {
+    text-align: center;
+}
+
 /* ==========================================
    BOTON EDITAR
 ========================================== */
-
 .btn-editar {
     width: 42px;
     height: 42px;
@@ -234,7 +245,7 @@
     border-radius: 10px;
     background: transparent;
     color: #3B82F6;
-    font-size: 22px;
+    font-size: 18px;
     cursor: pointer;
     transition: .2s;
 }
@@ -246,38 +257,57 @@
     }
 
 /* ==========================================
-   ESTADOS
-========================================== */
+   ESTADOS Y BADGES (UNIFORMIDAD APLICADA)
+========================================= */
 
-.estado-disponible {
-    color: #198754;
-    font-weight: 600;
+/* Estilo base común para todos los badges para asegurar uniformidad */
+.estado-disponible, .estado-stockbajo, .estado-sinstock {
+    display: inline-block;
+    padding: 8px 20px;
+    font-weight: 700;
+    border-radius: 999px;
+    text-align: center;
+    white-space: nowrap;
 }
 
+.estado-disponible {
+    background-color: #93F26C;
+    color: #1b5e20;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* CAMBIO: Se ha aplicado uniformidad. 'estado-stockbajo' ahora usa el MISMO color amarillo vibrante del filtro */
 .estado-stockbajo {
-    color: #E6A700;
-    font-weight: 600;
+    background-color: #FFD56B; /* Amarillo vibrante unificado con el filtro */
+    color: #C26300; /* Texto marrón oscuro unificado con el filtro */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .estado-sinstock {
-    color: #DC3545;
-    font-weight: 600;
+    background-color: #FFCDD2;
+    color: #c62828;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* El número de stock bajo es NEGRO y SIN NEGRITA, como los demás */
+.stock-bajo {
+    color: #444; /* Negro unificado con la tabla */
+    font-weight: normal; /* Quita la negrita, igual que los otros números */
 }
 
 /* ==========================================
    MENSAJE SIN REGISTROS
 ========================================== */
-
 .sin-registros {
     text-align: center;
     color: #777;
     padding: 30px;
+    font-style: italic;
 }
 
 /* ==========================================
    PAGINACION
 ========================================== */
-
 .paginacion {
     display: flex;
     justify-content: center;
@@ -299,6 +329,9 @@
     font-weight: 600;
     cursor: pointer;
     transition: .20s;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
 }
 
     .btn-pagina:hover:not(:disabled) {
@@ -317,8 +350,7 @@
     }
 
     .btn-pagina.flecha {
-        font-size: 20px;
-        font-weight: 400;
+        font-size: 14px;
     }
 
 .puntos-paginacion {
@@ -327,4 +359,26 @@
     color: #666;
     font-weight: 600;
     user-select: none;
+}
+
+/* ==========================================
+   RESPONSIVE / PANTALLAS PEQUEÑAS
+========================================== */
+@media (max-width: 768px) {
+    .page-container {
+        padding: 15px;
+    }
+
+    .toolbar, .filtros {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .grupo-filtros {
+        flex-wrap: wrap;
+    }
+
+    .card-principal, .card-secundaria {
+        padding: 15px;
+    }
 }

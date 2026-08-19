@@ -16,11 +16,15 @@ builder.Services.AddScoped<SqlConnectionFactory>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 
+// Modificado para que tome automáticamente localhost en tu PC y itempurl en la nube
 builder.Services.AddScoped(sp =>
-    new HttpClient
+{
+    var navigationManager = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
+    return new HttpClient
     {
-        BaseAddress = new Uri("https://localhost:7228/")
-    });
+        BaseAddress = new Uri(navigationManager.BaseUri)
+    };
+});
 
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProductoService>();
@@ -35,7 +39,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
@@ -48,5 +51,8 @@ app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(LIBRERIA_M.Client._Imports).Assembly);
+
+// Agregado para resolver el enrutamiento en servidores remotos como IIS
+app.MapFallbackToFile("index.html");
 
 app.Run();

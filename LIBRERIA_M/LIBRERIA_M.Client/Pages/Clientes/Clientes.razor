@@ -1,0 +1,367 @@
+﻿@page "/clientes"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using Microsoft.AspNetCore.Components.Forms
+@using LIBRERIA_M.Client.Models
+@using LIBRERIA_M.Client.Services
+
+@inject ClienteService ClienteService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Clientes</PageTitle>
+
+<div class="page-container">
+
+    <!-- TÍTULO DE LA VISTA -->
+    <h1 class="titulo-modulo">CLIENTES (LISTADO)</h1>
+
+    <!-- MENSAJE DE ERROR GLOBAL -->
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong>Atención:</strong> @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    <!-- CARD CONTENEDORA PRINCIPAL -->
+    <div class="card-principal">
+
+        <!-- TOOLBAR: BUSCADOR Y BOTÓN NUEVO -->
+        <div class="toolbar-acciones">
+            <div class="contenedor-busqueda">
+                <i class="fa-solid fa-magnifying-glass icono-busqueda"></i>
+                <input type="text"
+                       class="input-busqueda"
+                       placeholder="Buscar cliente por nombre o DNI..."
+                       @bind="textoBusqueda"
+                       @bind:after="ReiniciarPaginaBusqueda"
+                       @bind:event="oninput" />
+            </div>
+
+            <button class="btn-principal" @onclick='() => Navigation.NavigateTo("/clientes/nuevo")'>
+                + Nuevo Cliente
+            </button>
+        </div>
+
+        <!-- FILTROS POR ESTADO -->
+        <div class="filtros">
+            <span class="titulo-filtro">Filtrar por estado:</span>
+            <div class="grupo-filtros">
+                <button class="@ObtenerClaseFiltro("Todos")"
+                        @onclick='() => CambiarFiltro("Todos")'>
+                    Todos
+                </button>
+                <button class="@ObtenerClaseFiltro("AlDia")"
+                        @onclick='() => CambiarFiltro("AlDia")'>
+                    Al Día
+                </button>
+                <button class="@ObtenerClaseFiltro("ConDeuda")"
+                        @onclick='() => CambiarFiltro("ConDeuda")'>
+                    Con Deuda
+                </button>
+            </div>
+        </div>
+
+        <!-- TABLA DENTRO DEL CONTENEDOR -->
+        @if (cargando)
+        {
+            <div class="sin-registros">
+                <div class="spinner-border text-primary me-2" role="status"></div>
+                Cargando listado de clientes...
+            </div>
+        }
+        else if (!ClientesPaginados.Any())
+        {
+            <div class="sin-registros">
+                <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-muted"></i>
+                No se encontraron clientes registrados.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="tabla-modulo">
+                    <thead>
+                        <tr>
+                            <th>DNI</th>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Deuda</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in ClientesPaginados)
+                        {
+                            <tr>
+                                <td>@c.DNI</td>
+                                <td class="col-nombre">
+                                    @c.Apellido @c.Nombre
+                                </td>
+                                <td>@(string.IsNullOrEmpty(c.Telefono) ? "-" : c.Telefono)</td>
+                                <td>$ @c.Deuda.ToString("N2")</td>
+                                <td class="text-center">
+                                    @if (c.Deuda > 0)
+                                    {
+                                        <span class="badge-estado estado-condeuda">Con Deuda</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-estado estado-aldia">Al Día</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <div class="acciones-container">
+                                        <button class="btn-accion"
+                                                title="Editar / Ver Detalle"
+                                                @onclick='() => Navigation.NavigateTo($"/clientes/detalle/{c.IdCliente}")'>
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </button>
+
+                                        <button class="btn-accion btn-eliminar"
+                                                title="Eliminar Cliente"
+                                                @onclick="() => ConfirmarDesactivacion(c)">
+                                            <i class="fa-regular fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <!-- PAGINACIÓN -->
+        <div class="pie-tabla">
+            <span class="info-registros">
+                Mostrando @ClientesPaginados.Count() de @ClientesFiltradosBase.Count() clientes
+            </span>
+
+            @if (TotalPaginas > 1)
+            {
+                <div class="paginacion">
+                    <button class="btn-pagina flecha"
+                            @onclick="() => CambiarPagina(paginaActual - 1)"
+                            disabled="@(paginaActual == 1)">
+                        &lt;
+                    </button>
+
+                    @foreach (var pagina in PaginasVisibles)
+                    {
+                        <button class="@ObtenerClasePagina(pagina)"
+                                @onclick="() => CambiarPagina(pagina)">
+                            @pagina
+                        </button>
+                    }
+
+                    <button class="btn-pagina flecha"
+                            @onclick="() => CambiarPagina(paginaActual + 1)"
+                            disabled="@(paginaActual == TotalPaginas)">
+                        &gt;
+                    </button>
+                </div>
+            }
+        </div>
+
+    </div>
+
+</div>
+
+@code {
+    private List<ClienteDto> listaClientesCompleta = new();
+
+    private string filtroActivo = "Todos";
+    private string textoBusqueda = string.Empty;
+    private string? mensajeError = null;
+
+    private bool cargando = true;
+    private int totalClientesGeneral = 0;
+
+    private int paginaActual = 1;
+    private const int registrosPorPagina = 5;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarClientes();
+    }
+
+    private async Task CargarClientes()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            if (totalClientesGeneral == 0 || filtroActivo == "Todos")
+            {
+                var todos = await ClienteService.ObtenerClientesAsync();
+                totalClientesGeneral = todos.Count;
+
+                if (filtroActivo == "Todos")
+                {
+                    listaClientesCompleta = todos;
+                }
+            }
+
+            if (filtroActivo == "AlDia")
+            {
+                listaClientesCompleta = await ClienteService.ObtenerClientesAlDiaAsync();
+            }
+            else if (filtroActivo == "ConDeuda")
+            {
+                listaClientesCompleta = await ClienteService.ObtenerClientesConDeudaAsync();
+            }
+
+            AjustarPaginaActual();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al obtener datos: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private IEnumerable<ClienteDto> ClientesFiltradosBase
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(textoBusqueda))
+            {
+                return listaClientesCompleta;
+            }
+
+            var txt = textoBusqueda.Trim().ToLower();
+            return listaClientesCompleta.Where(c =>
+                (c.Nombre?.ToLower().Contains(txt) ?? false) ||
+                (c.Apellido?.ToLower().Contains(txt) ?? false) ||
+                (c.DNI?.ToLower().Contains(txt) ?? false) ||
+                (c.Telefono?.ToLower().Contains(txt) ?? false)
+            );
+        }
+    }
+
+    private IEnumerable<ClienteDto> ClientesPaginados =>
+        ClientesFiltradosBase
+            .Skip((paginaActual - 1) * registrosPorPagina)
+            .Take(registrosPorPagina);
+
+    private int TotalPaginas =>
+        (int)Math.Ceiling(
+            ClientesFiltradosBase.Count()
+            / (double)registrosPorPagina);
+
+    private void CambiarPagina(int pagina)
+    {
+        if (pagina < 1 || pagina > TotalPaginas)
+            return;
+
+        paginaActual = pagina;
+    }
+
+    private async Task CambiarFiltro(string nuevoFiltro)
+    {
+        if (filtroActivo != nuevoFiltro)
+        {
+            filtroActivo = nuevoFiltro;
+            paginaActual = 1;
+            await CargarClientes();
+        }
+    }
+
+    private string ObtenerClaseFiltro(string filtro)
+    {
+        if (filtroActivo != filtro) return "btn-filtro";
+
+        return filtro switch
+        {
+            "Todos" => "btn-filtro activo-todos",
+            "AlDia" => "btn-filtro activo-aldia",
+            "ConDeuda" => "btn-filtro activo-condeuda",
+            _ => "btn-filtro"
+        };
+    }
+
+    private void ReiniciarPaginaBusqueda()
+    {
+        paginaActual = 1;
+        StateHasChanged();
+    }
+
+    private void AjustarPaginaActual()
+    {
+        if (TotalPaginas == 0)
+        {
+            paginaActual = 1;
+            return;
+        }
+
+        if (paginaActual > TotalPaginas)
+        {
+            paginaActual = TotalPaginas;
+        }
+    }
+
+    private IEnumerable<int> PaginasVisibles
+    {
+        get
+        {
+            if (TotalPaginas <= 5)
+            {
+                return Enumerable.Range(1, TotalPaginas);
+            }
+
+            var inicio = Math.Max(2, paginaActual - 1);
+            var fin = Math.Min(TotalPaginas - 1, paginaActual + 1);
+
+            if (paginaActual <= 2)
+            {
+                inicio = 2;
+                fin = 4;
+            }
+
+            if (paginaActual >= TotalPaginas - 1)
+            {
+                inicio = TotalPaginas - 3;
+                fin = TotalPaginas - 1;
+            }
+
+            return Enumerable.Range(inicio, fin - inicio + 1);
+        }
+    }
+
+    private string ObtenerClasePagina(int pagina)
+    {
+        return paginaActual == pagina
+            ? "btn-pagina activa"
+            : "btn-pagina";
+    }
+
+    private async Task ConfirmarDesactivacion(ClienteDto cliente)
+    {
+        mensajeError = null;
+        bool confirmado = await JS.InvokeAsync<bool>(
+            "confirm",
+            $"¿Está seguro de desactivar al cliente {cliente.Apellido}, {cliente.Nombre}?");
+
+        if (confirmado)
+        {
+            try
+            {
+                await ClienteService.DesactivarClienteAsync(cliente.IdCliente);
+                totalClientesGeneral = 0;
+                await CargarClientes();
+            }
+            catch (Exception ex)
+            {
+                mensajeError = ex.Message;
+            }
+        }
+    }
+}

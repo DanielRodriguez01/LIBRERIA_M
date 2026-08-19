@@ -21,5 +21,9 @@
         public decimal PorcentajeDescuento { get; set; }
 
         public bool Estado { get; set; }
+
+        public decimal Deuda { get; set; } 
+
+        public DateTime FechaAlta { get; set; } 
     }
 }

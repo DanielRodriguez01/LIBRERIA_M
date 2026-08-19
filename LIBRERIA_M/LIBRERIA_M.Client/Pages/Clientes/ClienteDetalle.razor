@@ -1,0 +1,486 @@
+﻿@page "/clientes/nuevo"
+@page "/clientes/detalle/{IdCliente:int}"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using LIBRERIA_M.Client.Models
+@using LIBRERIA_M.Client.Services
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject NavigationManager Navigation
+@inject ClienteService ClienteService
+@inject IJSRuntime JS
+
+<PageTitle>
+    @(EsNuevo ? "Crear Cliente" : "Detalle Cliente")
+</PageTitle>
+
+<div class="page-container">
+
+    <!-- CABECERA SUPERIOR -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <button class="btn btn-link text-decoration-none fw-bold p-0 text-primary" @onclick="Volver">
+            <i class="fa-solid fa-arrow-left me-2"></i>VOLVER AL LISTADO CLIENTES
+        </button>
+
+        @if (!EsNuevo)
+        {
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-info text-white fw-bold btn-sm px-3" @onclick="HabilitarEdicion">
+                    <i class="fa-solid fa-pen-to-square me-1"></i> EDITAR CLIENTE
+                </button>
+                <button type="button" class="btn btn-outline-danger fw-bold btn-sm px-3" @onclick="ConfirmarDesactivacion">
+                    <i class="fa-solid fa-user-xmark me-1"></i> DESACTIVAR CLIENTE
+                </button>
+            </div>
+        }
+    </div>
+
+    <!-- MENSAJE DE ERROR -->
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-3 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong>Atención:</strong> @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    @if (cargando)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Cargando información del cliente...</p>
+        </div>
+    }
+    else if (EsNuevo || modoEdicion)
+    {
+        <!-- =======================================================
+             VISTA FORMULARIO: CREACIÓN O EDICIÓN COMPLETA
+        ======================================================= -->
+        <div class="card shadow-sm border-0 p-4">
+            <h4 class="fw-bold mb-4">@(EsNuevo ? "Nuevo Cliente" : "Editar Cliente")</h4>
+            <EditForm Model="cliente" OnValidSubmit="GuardarCliente">
+                <DataAnnotationsValidator />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Nombre *</label>
+                        <InputText class="form-control" @bind-Value="cliente.Nombre" placeholder="Ej. Daniel" />
+                        <ValidationMessage For="@(() => cliente.Nombre)" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Apellido *</label>
+                        <InputText class="form-control" @bind-Value="cliente.Apellido" placeholder="Ej. Rodriguez" />
+                        <ValidationMessage For="@(() => cliente.Apellido)" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">DNI / CUIL *</label>
+                        <InputText class="form-control" @bind-Value="cliente.DNI" placeholder="Sin puntos ni espacios" />
+                        <ValidationMessage For="@(() => cliente.DNI)" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Teléfono</label>
+                        <InputText class="form-control" @bind-Value="cliente.Telefono" placeholder="Ej. 99994444" />
+                        <ValidationMessage For="@(() => cliente.Telefono)" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Email</label>
+                        <InputText class="form-control" @bind-Value="cliente.Email" placeholder="correo@ejemplo.com" />
+                        <ValidationMessage For="@(() => cliente.Email)" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Dirección</label>
+                        <InputText class="form-control" @bind-Value="cliente.Direccion" placeholder="Ej. Av. Mayo 111" />
+                        <ValidationMessage For="@(() => cliente.Direccion)" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Tipo de Cliente</label>
+                        <InputSelect class="form-select" @bind-Value="cliente.TipoCliente">
+                            <option value="Normal">Normal</option>
+                            <option value="Particular">Particular</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Descuento (%)</label>
+                        <InputNumber class="form-control" @bind-Value="cliente.PorcentajeDescuento" min="0" max="100" />
+                    </div>
+                </div>
+
+                <div class="text-end mt-4">
+                    <button type="button" class="btn btn-light px-4 me-2 fw-bold" @onclick="CancelarEdicion">
+                        CANCELAR
+                    </button>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">
+                        @(EsNuevo ? "GUARDAR CLIENTE" : "GUARDAR CAMBIOS")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    }
+    else
+    {
+        <!-- =======================================================
+             VISTA DASHBOARD CLIENTE (SEGÚN MAQUETA FIGMA)
+        ======================================================= -->
+        <!-- TARJETAS SUPERIORES DE INFORMACIÓN Y RESUMEN -->
+        <div class="row g-3 mb-4">
+            <!-- TARJETA IZQUIERDA: INFORMACIÓN DEL CLIENTE -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100 p-3">
+                    <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">INFORMACIÓN DEL CLIENTE</h6>
+                    <div class="lh-lg">
+                        <div><strong>NOMBRE :</strong> @cliente.Apellido.ToUpper() @cliente.Nombre.ToUpper()</div>
+                        <div><i class="fa-solid fa-id-card me-2 text-muted"></i><strong>DNI :</strong> @cliente.DNI</div>
+                        <div><i class="fa-solid fa-phone me-2 text-muted"></i><strong>TELÉFONO :</strong> @(string.IsNullOrEmpty(cliente.Telefono) ? "-" : cliente.Telefono)</div>
+                        <div><i class="fa-solid fa-location-dot me-2 text-muted"></i><strong>DIRECCIÓN :</strong> @(string.IsNullOrEmpty(cliente.Direccion) ? "-" : cliente.Direccion)</div>
+                        <div><i class="fa-solid fa-envelope me-2 text-muted"></i><strong>EMAIL :</strong> @(string.IsNullOrEmpty(cliente.Email) ? "-" : cliente.Email)</div>
+                        <div><strong>CLIENTE DESDE:</strong> @cliente.FechaAlta.ToString("dd/MM/yyyy")</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TARJETA DERECHA: RESUMEN FINANCIERO -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100 p-3">
+                    <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">RESUMEN FINANCIERO</h6>
+
+                    <div class="d-flex align-items-center justify-content-between mb-3 p-2 rounded bg-light">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-success text-white p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <i class="fa-solid fa-dollar-sign fs-5"></i>
+                            </div>
+                            <span class="fw-bold text-secondary">TOTAL COMPRADO</span>
+                        </div>
+                        <span class="fs-5 fw-bold text-success">$ @totalComprado.ToString("N2")</span>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between mb-3 p-2 rounded bg-light">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-danger text-white p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <i class="fa-solid fa-dollar-sign fs-5"></i>
+                            </div>
+                            <span class="fw-bold text-secondary">SALDO PENDIENTE</span>
+                        </div>
+                        <span class="fs-5 fw-bold text-danger">$ @cliente.Deuda.ToString("N2")</span>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                        <span class="fw-bold text-secondary">ESTADO ACTUAL:</span>
+                        @if (cliente.Deuda > 0)
+                        {
+                            <span class="badge bg-danger fs-6 px-3 py-2">CON DEUDA</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success fs-6 px-3 py-2">AL DÍA</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN INFERIOR: HISTORIAL DE TABLAS Y REGISTRO DE PAGO -->
+        <div class="row g-3">
+
+            <!-- SECCIÓN PESTAÑAS (TABS) -->
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm p-3 h-100">
+
+                    <!-- NAVEGACIÓN TABS -->
+                    <ul class="nav nav-tabs border-bottom-0 mb-3">
+                        <li class="nav-item">
+                            <button class="nav-link fw-bold @(pestanaActiva == "Compras" ? "active" : "")" @onclick='() => CambiarPestana("Compras")'>
+                                HISTORIAL DE COMPRAS
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-bold @(pestanaActiva == "Pagos" ? "active" : "")" @onclick='() => CambiarPestana("Pagos")'>
+                                PAGOS REALIZADOS
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-bold @(pestanaActiva == "Pedidos" ? "active" : "")" @onclick='() => CambiarPestana("Pedidos")'>
+                                PEDIDOS
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-bold @(pestanaActiva == "Notas" ? "active" : "")" @onclick='() => CambiarPestana("Notas")'>
+                                NOTAS
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- CONTENIDO DE PESTAÑAS -->
+                    @if (pestanaActiva == "Compras")
+                    {
+                        @if (!historialCompras.Any())
+                        {
+                            <div class="text-center text-muted py-5">
+                                <i class="fa-solid fa-receipt fa-2x mb-2 d-block"></i>
+                                El cliente aún no registra compras en el sistema.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr class="table-light">
+                                            <th>FECHA</th>
+                                            <th>Nº DE FACTURA</th>
+                                            <th>TOTAL</th>
+                                            <th>PAGADO</th>
+                                            <th>SALDO</th>
+                                            <th class="text-center">VER</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in historialCompras)
+                                        {
+                                            <tr>
+                                                <td>@item.Fecha.ToString("dd/MM/yyyy")</td>
+                                                <td>@item.NroFactura</td>
+                                                <td>$ @item.Total.ToString("N2")</td>
+                                                <td class="text-success fw-bold">$ @item.Pagado.ToString("N2")</td>
+                                                <td class="text-danger fw-bold">$ @item.Saldo.ToString("N2")</td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-sm btn-outline-info rounded-circle">
+                                                        <i class="fa-solid fa-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    }
+                    else if (pestanaActiva == "Pagos")
+                    {
+                        <div class="text-center text-muted py-5">
+                            <i class="fa-solid fa-money-bill-transfer fa-2x mb-2 d-block"></i>
+                            No hay pagos registrados para este cliente.
+                        </div>
+                    }
+                    else if (pestanaActiva == "Pedidos")
+                    {
+                        <div class="text-center text-muted py-5">
+                            <i class="fa-solid fa-box-open fa-2x mb-2 d-block"></i>
+                            No existen pedidos pendientes.
+                        </div>
+                    }
+                    else if (pestanaActiva == "Notas")
+                    {
+                        <div class="text-center text-muted py-5">
+                            <i class="fa-solid fa-note-sticky fa-2x mb-2 d-block"></i>
+                            Sin observaciones anotadas.
+                        </div>
+                    }
+
+                </div>
+            </div>
+
+            <!-- SECCIÓN REGISTRAR PAGO -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-3">
+                    <h6 class="fw-bold mb-3">REGISTRAR PAGO:</h6>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">MONTO A PAGAR *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" @bind="montoPago" step="0.01" min="0" placeholder="0.00" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">MÉTODO DE PAGO *</label>
+                        <select class="form-select" @bind="metodoPago">
+                            <option value="EFECTIVO">EFECTIVO</option>
+                            <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                            <option value="TARJETA">TARJETA</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">FECHA DE PAGO *</label>
+                        <input type="date" class="form-control" @bind="fechaPago" />
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button class="btn btn-info text-white fw-bold py-2" @onclick="RegistrarPago">
+                            <i class="fa-solid fa-check me-1"></i> REGISTRAR PAGO
+                        </button>
+                        <button class="btn btn-light fw-bold py-2" @onclick="LimpiarFormularioPago">
+                            X CANCELAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    }
+
+</div>
+
+@code {
+    [Parameter]
+    public int? IdCliente { get; set; }
+
+    private ClienteDto cliente = new()
+    {
+        TipoCliente = "Normal",
+        Estado = true,
+        PorcentajeDescuento = 0
+    };
+
+    private bool cargando = false;
+    private bool modoEdicion = false;
+    private string? mensajeError = null;
+    private string pestanaActiva = "Compras";
+
+    // Variables Financieras y Formulario de Pago
+    private decimal totalComprado = 0.00m;
+    private decimal montoPago = 0.00m;
+    private string metodoPago = "EFECTIVO";
+    private DateTime fechaPago = DateTime.Now;
+
+    // Model de prueba local para simular la tabla de compras
+    private List<CompraHistorialDto> historialCompras = new();
+
+    private bool EsNuevo => !IdCliente.HasValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IdCliente.HasValue)
+        {
+            await CargarClienteExistente();
+        }
+    }
+
+    private async Task CargarClienteExistente()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            var c = await ClienteService.ObtenerPorIdAsync(IdCliente.Value);
+            if (c != null)
+            {
+                cliente = c;
+                // Si el cliente no tiene compras asociadas, se inicializa por defecto en $0.00
+                totalComprado = 0.00m;
+            }
+            else
+            {
+                Navigation.NavigateTo("/clientes");
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar cliente: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void CambiarPestana(string nombrePestana)
+    {
+        pestanaActiva = nombrePestana;
+    }
+
+    private void HabilitarEdicion()
+    {
+        modoEdicion = true;
+    }
+
+    private async Task CancelarEdicion()
+    {
+        if (EsNuevo)
+        {
+            Volver();
+        }
+        else
+        {
+            modoEdicion = false;
+            await CargarClienteExistente();
+        }
+    }
+
+    private async Task GuardarCliente()
+    {
+        mensajeError = null;
+        try
+        {
+            if (EsNuevo)
+            {
+                await ClienteService.CrearClienteAsync(cliente);
+            }
+            else
+            {
+                await ClienteService.ActualizarClienteAsync(cliente);
+            }
+
+            Navigation.NavigateTo("/clientes");
+        }
+        catch (Exception ex)
+        {
+            mensajeError = ex.Message;
+        }
+    }
+
+    private async Task ConfirmarDesactivacion()
+    {
+        bool confirmado = await JS.InvokeAsync<bool>(
+            "confirm",
+            $"¿Está seguro de desactivar al cliente {cliente.Apellido}, {cliente.Nombre}?");
+
+        if (confirmado)
+        {
+            try
+            {
+                await ClienteService.DesactivarClienteAsync(cliente.IdCliente);
+                Navigation.NavigateTo("/clientes");
+            }
+            catch (Exception ex)
+            {
+                mensajeError = ex.Message;
+            }
+        }
+    }
+
+    private void RegistrarPago()
+    {
+        if (montoPago <= 0)
+        {
+            mensajeError = "Ingrese un monto a pagar válido.";
+            return;
+        }
+
+        // Lógica de imputación de pago contra la API
+        LimpiarFormularioPago();
+    }
+
+    private void LimpiarFormularioPago()
+    {
+        montoPago = 0.00m;
+        metodoPago = "EFECTIVO";
+        fechaPago = DateTime.Now;
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/clientes");
+    }
+
+    public class CompraHistorialDto
+    {
+        public DateTime Fecha { get; set; }
+        public string NroFactura { get; set; } = string.Empty;
+        public decimal Total { get; set; }
+        public decimal Pagado { get; set; }
+        public decimal Saldo { get; set; }
+    }
+}

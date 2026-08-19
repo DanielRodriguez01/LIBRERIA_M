@@ -1,6 +1,6 @@
 ﻿@page "/stock/nuevo"
 @page "/stock/editar/{IdProducto:int}"
-@rendermode InteractiveWebAssembly
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 @using LIBRERIA_M.Client.Models
 @using LIBRERIA_M.Client.Services
@@ -170,10 +170,11 @@
                             <i class="fa-regular fa-image fa-4x icono-imagen"></i>
                         }
 
+                        @* MODIFICACIÓN: Se ha ocultado el input estándar y se usa el label como botón *@
                         <InputFile id="input-imagen"
                                    OnChange="SeleccionarImagen"
                                    accept="image/png,image/jpeg,image/jpg"
-                                   class="input-imagen" />
+                                   class="input-imagen-oculto" />
 
                         <label for="input-imagen"
                                class="btn-subir">
