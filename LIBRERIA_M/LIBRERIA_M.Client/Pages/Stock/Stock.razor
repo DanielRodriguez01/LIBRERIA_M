@@ -89,7 +89,7 @@
 
                         <th class="col-estado">Estado</th>
 
-                        <th class="col-precio">Precio</th>
+                        <th class="col-precio">Precio Venta</th>
 
                         <th class="col-acciones">Acciones</th>
 
@@ -153,7 +153,14 @@
 
                                 <td class="col-precio">
 
-                                    @producto.PrecioUnitario.ToString("C", formatoMoneda)
+                                    @if (producto.PrecioSugerido.HasValue && producto.PrecioSugerido.Value > 0)
+                                    {
+                                        @producto.PrecioSugerido.Value.ToString("C", formatoMoneda)
+                                    }
+                                    else
+                                    {
+                                        @producto.PrecioUnitario.ToString("C", formatoMoneda)
+                                    }
 
                                 </td>
 
@@ -292,14 +299,13 @@
 
     private const int registrosPorPagina = 5;
 
-    // MODIFICACIÓN: Formato de moneda localizado (Argentina) con punto para miles, coma para decimales y símbolo $ al final.
     private readonly CultureInfo formatoMoneda = new CultureInfo("es-AR")
     {
         NumberFormat = new NumberFormatInfo
         {
             CurrencySymbol = "$",
-            CurrencyPositivePattern = 3, // Pattern: n $
-            CurrencyNegativePattern = 8, // Pattern: -n $
+            CurrencyPositivePattern = 3,
+            CurrencyNegativePattern = 8,
             CurrencyGroupSeparator = ".",
             CurrencyDecimalSeparator = ","
         }

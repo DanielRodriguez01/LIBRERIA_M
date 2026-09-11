@@ -15,18 +15,15 @@
 
 <div class="page-nuevo-producto">
 
-    <h3 class="titulo-seccion">
-
-        <button class="btn btn-link text-decoration-none btn-volver"
-                @onclick="Volver"
-                title="Volver al listado de Stock">
-
-            <i class="fa-solid fa-arrow-left"></i>
-
+    <!-- Botón de retorno ubicado arriba a la izquierda -->
+    <div class="header-acciones-top mb-4">
+        <button class="btn-secundario" @onclick="Volver">
+            <i class="fa-solid fa-arrow-left me-1"></i> Volver al listado
         </button>
+    </div>
 
+    <h3 class="titulo-seccion mb-4">
         @(EsEdicion ? "Editar Producto" : "Nuevo Producto")
-
     </h3>
 
     <div class="card-formulario">
@@ -134,16 +131,35 @@
 
                     </div>
 
-                    <div class="mb-4">
+                    <div class="row mb-4">
 
-                        <label class="form-label">
-                            Precio Unitario *
-                        </label>
+                        <div class="col-md-6">
 
-                        <InputNumber class="form-control"
-                                     @bind-Value="producto.PrecioUnitario" />
+                            <label class="form-label">
+                                Precio Unitario *
+                            </label>
 
-                        <ValidationMessage For="@(() => producto.PrecioUnitario)" />
+                            <InputNumber class="form-control"
+                                         Value="@producto.PrecioUnitario"
+                                         ValueChanged="@((decimal val) => OnPrecioUnitarioChanged(val))"
+                                         ValueExpression="@(() => producto.PrecioUnitario)" />
+
+                            <ValidationMessage For="@(() => producto.PrecioUnitario)" />
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Precio Sugerido
+                            </label>
+
+                            <InputNumber class="form-control"
+                                         @bind-Value="producto.PrecioSugerido" />
+
+                            <ValidationMessage For="@(() => producto.PrecioSugerido)" />
+
+                        </div>
 
                     </div>
 
@@ -170,7 +186,6 @@
                             <i class="fa-regular fa-image fa-4x icono-imagen"></i>
                         }
 
-                        @* MODIFICACIÓN: Se ha ocultado el input estándar y se usa el label como botón *@
                         <InputFile id="input-imagen"
                                    OnChange="SeleccionarImagen"
                                    accept="image/png,image/jpeg,image/jpg"
@@ -299,22 +314,26 @@
     }
 
     // ==========================================
+    // CAMBIO DE PRECIO UNITARIO Y SUGERIDO AUTOMÁTICO
+    // ==========================================
+
+    private void OnPrecioUnitarioChanged(decimal nuevoPrecioUnitario)
+    {
+        producto.PrecioUnitario = nuevoPrecioUnitario;
+        producto.PrecioSugerido = nuevoPrecioUnitario * 2;
+    }
+
+    // ==========================================
     // PREPARAR IMAGEN PARA MOSTRAR
     // ==========================================
 
     private string PrepararImagen(string imagen)
     {
-        // Si ya contiene el Data URI completo,
-        // no necesitamos modificarlo.
-
         if (imagen.StartsWith("data:image/",
             StringComparison.OrdinalIgnoreCase))
         {
             return imagen;
         }
-
-        // Si solamente tenemos Base64, usamos JPEG
-        // como tipo predeterminado.
 
         return $"data:image/jpeg;base64,{imagen}";
     }
@@ -330,10 +349,6 @@
         if (archivo == null)
             return;
 
-        // ==========================================
-        // LÍMITE DE 5 MB
-        // ==========================================
-
         const long maximoBytes = 5 * 1024 * 1024;
 
         if (archivo.Size > maximoBytes)
@@ -343,10 +358,6 @@
 
             return;
         }
-
-        // ==========================================
-        // TIPOS PERMITIDOS
-        // ==========================================
 
         var tiposPermitidos = new[]
         {
@@ -363,10 +374,6 @@
             return;
         }
 
-        // ==========================================
-        // LEER ARCHIVO
-        // ==========================================
-
         using var stream =
             archivo.OpenReadStream(maxAllowedSize: maximoBytes);
 
@@ -376,21 +383,10 @@
 
         var buffer = memoryStream.ToArray();
 
-        // ==========================================
-        // CONVERTIR A BASE64
-        // ==========================================
-
         var base64 = Convert.ToBase64String(buffer);
-
-        // ==========================================
-        // CREAR DATA URI
-        // ==========================================
 
         imagenVistaPrevia =
             $"data:{archivo.ContentType};base64,{base64}";
-
-        // Guardamos la imagen dentro del DTO
-        // para que GuardarProducto la envíe al servidor.
 
         producto.Imagen = imagenVistaPrevia;
     }

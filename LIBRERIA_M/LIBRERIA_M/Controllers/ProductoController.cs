@@ -1,5 +1,5 @@
-﻿using LIBRERIA_M.Models;
-using LIBRERIA_M.Repositories;
+﻿using LIBRERIA_M.Models.Stock;
+using LIBRERIA_M.Repositories.Producto;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LIBRERIA_M.Controllers

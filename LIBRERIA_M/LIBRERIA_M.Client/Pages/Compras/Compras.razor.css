@@ -1,0 +1,465 @@
+﻿/* ==========================================
+   CONTENEDOR GENERAL
+========================================== */
+.page-container {
+    padding: 35px;
+    background: #F5F5F5;
+    min-height: 100vh;
+}
+
+/* ==========================================
+   CABECERA DE PANTALLA
+========================================== */
+.header-modulo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.titulo-modulo {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+
+.btn-principal {
+    background: #1E3AF3;
+    color: white;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .btn-principal:hover {
+        background: #1228C8;
+        transform: translateY(-1px);
+    }
+
+/* ==========================================
+   TARJETA PRINCIPAL
+========================================== */
+.card-principal {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+/* ==========================================
+   BARRA DE FILTROS Y BÚSQUEDA (TOOLBAR)
+========================================== */
+.toolbar-filtros {
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.campo-filtro {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.campo-buscador {
+    flex: 1;
+    min-width: 280px;
+}
+
+.campo-estados {
+    flex-shrink: 0;
+}
+
+.label-filtro {
+    font-size: 12px;
+    font-weight: 800;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.icon-search {
+    position: absolute;
+    left: 16px;
+    color: #888;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+.input-filtro {
+    height: 44px;
+    border-radius: 22px;
+    border: 1px solid #E0E0E0;
+    padding: 0 16px 0 42px;
+    font-size: 13px;
+    background: #FAFAFA;
+    color: #333;
+    outline: none;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+    .input-filtro:focus {
+        border-color: #1E3AF3;
+        background: #FFF;
+        box-shadow: 0 0 0 3px rgba(30, 58, 243, 0.1);
+    }
+
+/* GRUPO DE BOTONES DE FILTRO */
+.grupo-filtros {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-filtro {
+    background: #F0F0F0;
+    color: #444;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .btn-filtro:hover {
+        background: #E4E4E4;
+    }
+
+    /* ESTADOS ACTIVOS DE FILTROS */
+    .btn-filtro.activo-todos {
+        background: #1E3AF3;
+        color: white;
+        font-weight: 700;
+    }
+
+    .btn-filtro.activo-pagado {
+        background-color: #93F26C;
+        color: #1B5E20;
+        font-weight: 700;
+    }
+
+    .btn-filtro.activo-pendiente {
+        background-color: #FFCDD2;
+        color: #C62828;
+        font-weight: 700;
+    }
+
+    .btn-filtro.activo-parcial {
+        background-color: #FFD56B;
+        color: #C26300;
+        font-weight: 700;
+    }
+
+/* ==========================================
+   TABLA DE COMPRAS
+========================================== */
+.tabla-container {
+    overflow-x: auto;
+}
+
+.tabla-compras {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    table-layout: auto;
+}
+
+    .tabla-compras thead {
+        border-bottom: 2px solid #EEEEEE;
+    }
+
+    .tabla-compras th {
+        padding: 16px 12px;
+        font-weight: 800;
+        color: #222;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+        .tabla-compras th:nth-child(1) {
+            width: 110px;
+        }
+
+        .tabla-compras th:nth-child(2) {
+            width: auto;
+        }
+
+        .tabla-compras th:nth-child(3) {
+            width: 140px;
+        }
+
+        .tabla-compras th:nth-child(4) {
+            width: 140px;
+        }
+
+        .tabla-compras th:nth-child(5) {
+            width: 130px;
+        }
+
+        .tabla-compras th:nth-child(6) {
+            width: 110px;
+        }
+
+        .tabla-compras th:nth-child(7) {
+            width: 120px;
+        }
+
+        .tabla-compras th:nth-child(8) {
+            width: 100px;
+        }
+
+    .tabla-compras td {
+        padding: 18px 12px;
+        border-bottom: 1px solid #F0F0F0;
+        font-size: 14px;
+        color: #333;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+        .tabla-compras td:nth-child(2) {
+            white-space: normal;
+            max-width: 260px;
+            word-break: break-word;
+        }
+
+    .tabla-compras tbody tr:hover {
+        background: #FAF9FE;
+    }
+
+/* ALINEACIONES */
+.text-center {
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.saldo-parcial {
+    color: #D97706 !important;
+}
+
+/* ==========================================
+   BADGES DE ESTADO
+========================================== */
+.badge-estado {
+    display: inline-block;
+    padding: 6px 18px;
+    font-weight: 800;
+    font-size: 12px;
+    border-radius: 999px;
+    text-align: center;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.estado-pagado {
+    background-color: #93F26C;
+    color: #1B5E20;
+}
+
+.estado-parcial {
+    background-color: #FFD56B;
+    color: #C26300;
+}
+
+.estado-deuda {
+    background-color: #FFCDD2;
+    color: #C62828;
+}
+
+/* ==========================================
+   BOTONES DE ACCIÓN
+========================================== */
+.acciones-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.btn-accion {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #1E3AF3;
+    font-size: 16px;
+}
+
+    .btn-accion:hover {
+        background: #EEF2FF;
+        transform: scale(1.1);
+    }
+
+/* ==========================================
+   FOOTER, PAGINACIÓN Y LEYENDA
+========================================== */
+.sin-registros {
+    text-align: center;
+    padding: 40px;
+    color: #777;
+    font-size: 14px;
+}
+
+.footer-tabla {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 25px;
+    padding-top: 15px;
+}
+
+.info-registros {
+    font-size: 13px;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.paginacion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-pagina {
+    min-width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #444;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+    .btn-pagina.activa {
+        background: #DCE4FF;
+        color: #1E3AF3;
+        font-weight: 800;
+    }
+
+.card-leyenda {
+    background: white;
+    border-radius: 16px;
+    padding: 20px 25px;
+    margin-top: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.leyenda-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.icon-info {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #1E3AF3;
+    color: #1E3AF3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.texto-info {
+    font-size: 13px;
+    font-weight: 800;
+    color: #1E3AF3;
+    line-height: 1.2;
+}
+
+.leyenda-estados {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tag-pagado {
+    color: #1B5E20;
+    font-weight: 800;
+}
+
+.tag-parcial {
+    color: #C26300;
+    font-weight: 800;
+}
+
+.tag-deuda {
+    color: #C62828;
+    font-weight: 800;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .toolbar-filtros {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .campo-buscador {
+        width: 100%;
+    }
+
+    .card-leyenda {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+}

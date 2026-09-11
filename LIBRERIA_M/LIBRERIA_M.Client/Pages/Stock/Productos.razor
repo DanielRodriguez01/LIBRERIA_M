@@ -17,9 +17,7 @@
 else
 {
     <table class="table table-bordered table-hover">
-
         <thead class="table-dark">
-
             <tr>
                 <th>Código</th>
                 <th>Nombre</th>
@@ -27,40 +25,27 @@ else
                 <th>Precio</th>
                 <th>Estado</th>
             </tr>
-
         </thead>
-
         <tbody>
-
             @foreach (var producto in productos)
             {
                 <tr>
-
                     <td>@producto.IdProducto.ToString("D5")</td>
-
                     <td>@producto.Nombre</td>
-
                     <td>@producto.StockActual</td>
-
                     <td>@producto.PrecioUnitario</td>
-
                     <td>@producto.Estado</td>
-
                 </tr>
             }
-
         </tbody>
-
     </table>
 }
 
-@code{
-
-    private List<LIBRERIA_M.Client.Models.ProductoDto>? productos;
+@code {
+    private List<ProductoDto>? productos;
 
     protected override async Task OnInitializedAsync()
     {
         productos = await ProductoService.ObtenerProductos();
     }
-
 }

@@ -14,7 +14,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Pages\Compras\" />
 		<Folder Include="Pages\Estadisticas\" />
 		<Folder Include="Pages\PanelControl\" />
 		<Folder Include="Pages\Pedidos\" />

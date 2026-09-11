@@ -1,0 +1,816 @@
+﻿@page "/proveedores/nuevo"
+@page "/proveedores/detalle/{IdProveedor:int}"
+@page "/proveedores/editar/{IdProveedor:int}"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using Microsoft.AspNetCore.Components.Forms
+@using LIBRERIA_M.Client.Models.Proveedor
+@using LIBRERIA_M.Client.Services
+
+@inject ProveedorService ProveedorService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>@(EsNuevo ? "Nuevo Proveedor" : (modoEdicion ? "Editar Proveedor" : proveedor.Nombre))</PageTitle>
+
+<div class="container-fluid py-3">
+
+    <!-- MENSAJES GLOBALES DE ERROR Y ÉXITO -->
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-3" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong>Error:</strong> @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(mensajeExito))
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-3" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            @mensajeExito
+            <button type="button" class="btn-close" @onclick="() => mensajeExito = null"></button>
+        </div>
+    }
+
+    @if (cargando)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Cargando información del proveedor...</p>
+        </div>
+    }
+    else if (modoEdicion || EsNuevo)
+    {
+        <!-- =======================================================
+             VISTA FORMULARIO: CREACIÓN O EDICIÓN DE PROVEEDOR
+        ======================================================= -->
+        <!-- Botón de retorno ubicado arriba a la izquierda -->
+        <div class="header-acciones-top mb-4">
+            <button class="btn-secundario" @onclick="CancelarAccion">
+                <i class="fa-solid fa-arrow-left me-1"></i> Volver al listado
+            </button>
+        </div>
+
+        <h4 class="mb-4 fw-bold text-dark">
+            <i class="fa-solid @(EsNuevo ? "fa-truck-field" : "fa-pen-to-square") me-2 text-primary"></i>
+            @(EsNuevo ? "REGISTRAR NUEVO PROVEEDOR" : $"EDITAR PROVEEDOR #{proveedor.IdProveedor}")
+        </h4>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <EditForm Model="modeloFormulario" OnValidSubmit="GuardarProveedor">
+                    <DataAnnotationsValidator />
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">CUIT / Identificación Tributaria <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="modeloFormulario.CUIT" placeholder="Ej: 30-12345678-9" />
+                            <ValidationMessage For="@(() => modeloFormulario.CUIT)" class="text-danger small" />
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Razón Social / Nombre <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="modeloFormulario.Nombre" placeholder="Razón social o nombre comercial" />
+                            <ValidationMessage For="@(() => modeloFormulario.Nombre)" class="text-danger small" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Teléfono de Contacto</label>
+                            <InputText class="form-control" @bind-Value="modeloFormulario.Telefono" placeholder="Ej: +54 351 1234567" />
+                            <ValidationMessage For="@(() => modeloFormulario.Telefono)" class="text-danger small" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Email de Contacto</label>
+                            <InputText class="form-control" type="email" @bind-Value="modeloFormulario.Email" placeholder="ejemplo@proveedor.com" />
+                            <ValidationMessage For="@(() => modeloFormulario.Email)" class="text-danger small" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Dirección Física / Comercial</label>
+                            <InputText class="form-control" @bind-Value="modeloFormulario.Direccion" placeholder="Calle, Número, Barrio, Ciudad" />
+                            <ValidationMessage For="@(() => modeloFormulario.Direccion)" class="text-danger small" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <button type="button" class="btn btn-light px-4" @onclick="CancelarAccion" disabled="@guardando">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-info text-white px-4 fw-bold" disabled="@guardando">
+                            @if (guardando)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                <span>Guardando...</span>
+                            }
+                            else
+                            {
+                                <i class="fa-solid fa-floppy-disk me-2"></i>
+                                <span>@(EsNuevo ? "Registrar Proveedor" : "Guardar Cambios")</span>
+                            }
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- =======================================================
+             VISTA DASHBOARD / DETALLE COMPLETO DE PROVEEDOR
+        ====================================================== -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <button class="btn btn-link text-decoration-none text-muted p-0 mb-1" @onclick='() => Navigation.NavigateTo("/proveedores")'>
+                    <i class="fa-solid fa-arrow-left me-1"></i> Volver al listado
+                </button>
+                <h2 class="fw-bold mb-0 text-dark">@proveedor.Nombre</h2>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary fw-bold" @onclick="HabilitarModoEdicion">
+                    <i class="fa-solid fa-pen-to-square me-1"></i> EDITAR PROVEEDOR
+                </button>
+            </div>
+        </div>
+
+        <!-- TARJETAS SUPERIORES -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6 col-lg-7">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
+                        <h6 class="text-uppercase text-muted fw-bold mb-0 small">
+                            <i class="fa-solid fa-address-card me-2 text-primary"></i>Información Comercial
+                        </h6>
+                        @if (proveedor.Estado == 1)
+                        {
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+                                <i class="fa-solid fa-circle me-1 small"></i>Activo
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1">
+                                <i class="fa-solid fa-circle me-1 small"></i>Inactivo
+                            </span>
+                        }
+                    </div>
+                    <div class="card-body px-4 pb-4 pt-2">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block small">CUIT / ID Tributaria</span>
+                                <span class="fw-semibold text-dark">
+                                    <i class="fa-solid fa-id-card text-muted me-2"></i>
+                                    @(string.IsNullOrEmpty(proveedor.CUIT) ? "-" : proveedor.CUIT)
+                                </span>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block small">Teléfono</span>
+                                <span class="fw-semibold text-dark">
+                                    <i class="fa-solid fa-phone text-muted me-2"></i>
+                                    @(string.IsNullOrEmpty(proveedor.Telefono) ? "-" : proveedor.Telefono)
+                                </span>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block small">Correo Electrónico</span>
+                                <span class="fw-semibold text-dark">
+                                    <i class="fa-solid fa-envelope text-muted me-2"></i>
+                                    @(string.IsNullOrEmpty(proveedor.Email) ? "-" : proveedor.Email)
+                                </span>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block small">Dirección Comercial</span>
+                                <span class="fw-semibold text-dark">
+                                    <i class="fa-solid fa-location-dot text-muted me-2"></i>
+                                    @(string.IsNullOrEmpty(proveedor.Direccion) ? "-" : proveedor.Direccion)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-5">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-0 pt-3 px-4 d-flex justify-content-between align-items-center">
+                        <h6 class="text-uppercase text-muted fw-bold mb-0 small">
+                            <i class="fa-solid fa-scale-balanced me-2 text-primary"></i>Estado de Cuenta Corriente
+                        </h6>
+                        <span class="badge @(resumenProveedor.EstadoFinanciero == "CON DEUDA" ? "bg-warning-subtle text-warning-emphasis border border-warning-subtle" : "bg-success-subtle text-success border border-success-subtle") rounded-pill px-3 py-1">
+                            @resumenProveedor.EstadoFinanciero
+                        </span>
+                    </div>
+                    <div class="card-body px-4 pb-4 pt-2 d-flex flex-column justify-content-between">
+                        <div class="d-flex align-items-center justify-content-between my-2">
+                            <div>
+                                <span class="text-muted d-block small">Saldo Pendiente a Pagar</span>
+                                <h2 class="fw-bold mb-0 @(resumenProveedor.SaldoPendiente > 0 ? "text-danger" : "text-success")">
+                                    $ @resumenProveedor.SaldoPendiente.ToString("N2")
+                                </h2>
+                            </div>
+                            <div class="rounded-circle p-3 d-flex align-items-center justify-content-center @(resumenProveedor.SaldoPendiente > 0 ? "bg-danger-subtle text-danger" : "bg-success-subtle text-success")" style="width: 56px; height: 56px;">
+                                <i class="fa-solid @(resumenProveedor.SaldoPendiente > 0 ? "fa-file-invoice-dollar" : "fa-circle-check") fa-xl"></i>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center text-muted small">
+                            <span>Total Histórico Comprado:</span>
+                            <span class="fw-bold text-dark fs-6">$ @resumenProveedor.TotalComprado.ToString("N2")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENIDO INFERIOR CON TABLAS Y PAGINACIÓN -->
+        <div class="row g-3">
+            <div class="col-lg-8">
+                <div class="card shadow-sm p-3">
+
+                    <ul class="nav nav-tabs mb-3" id="proveedorTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(tabActiva == "compras" ? "active" : "")" @onclick='() => SeleccionarTab("compras")'>
+                                <i class="fa-solid fa-cart-flatbed me-1"></i> Compras / Remitos (@listaCompras.Count)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(tabActiva == "pagos" ? "active" : "")" @onclick='() => SeleccionarTab("pagos")'>
+                                <i class="fa-solid fa-money-bill-transfer me-1"></i> Historial de Pagos (@listaPagos.Count)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(tabActiva == "notas" ? "active" : "")" @onclick='() => SeleccionarTab("notas")'>
+                                <i class="fa-solid fa-clipboard me-1"></i> Notas Internas
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content p-2">
+
+                        <!-- TAB COMPRAS -->
+                        @if (tabActiva == "compras")
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>N° Factura / Remito</th>
+                                            <th>Estado</th>
+                                            <th class="text-end">Total Compra</th>
+                                            <th class="text-end">Saldo Pendiente</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (listaComprasPaginada.Any())
+                                        {
+                                            @foreach (var compra in listaComprasPaginada)
+                                            {
+                                                <tr>
+                                                    <td>@compra.FechaCompra.ToString("dd/MM/yyyy HH:mm")</td>
+                                                    <td>
+                                                        <span class="fw-bold">@(string.IsNullOrEmpty(compra.NumeroFactura) ? "-" : compra.NumeroFactura)</span>
+                                                        @if (!string.IsNullOrEmpty(compra.NumeroRemito))
+                                                        {
+                                                            <small class="text-muted d-block">Rem: @compra.NumeroRemito</small>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge @(compra.Estado == "PAGADO" ? "bg-success" : (compra.Estado == "PARCIAL" ? "bg-warning text-dark" : "bg-danger"))">
+                                                            @compra.Estado
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-end fw-bold">$ @compra.TotalCompra.ToString("N2")</td>
+                                                    <td class="text-end text-danger fw-bold">$ @compra.SaldoPendiente.ToString("N2")</td>
+                                                </tr>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted py-4">
+                                                    <i class="fa-solid fa-box-open fa-2x d-block mb-2 text-muted"></i>
+                                                    No hay facturas o remitos registrados recientemente.
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- CONTROLES DE PAGINACIÓN COMPRAS (estilo unificado con Proveedores.razor) -->
+                            <div class="pie-tabla mt-3 pt-2 border-top">
+                                <span class="info-registros">
+                                    Mostrando @listaComprasPaginada.Count() de @listaCompras.Count compras
+                                </span>
+
+                                @if (totalPaginasCompras > 1)
+                                {
+                                    <div class="paginacion">
+                                        <button class="btn-pagina flecha"
+                                                @onclick="() => CambiarPaginaCompras(paginaCompras - 1)"
+                                                disabled="@(paginaCompras == 1)">
+                                            &lt;
+                                        </button>
+
+                                        @foreach (var pagina in PaginasVisiblesCompras)
+                                        {
+                                            <button class="@ObtenerClasePaginaCompras(pagina)"
+                                                    @onclick="() => CambiarPaginaCompras(pagina)">
+                                                @pagina
+                                            </button>
+                                        }
+
+                                        <button class="btn-pagina flecha"
+                                                @onclick="() => CambiarPaginaCompras(paginaCompras + 1)"
+                                                disabled="@(paginaCompras == totalPaginasCompras)">
+                                            &gt;
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else if (tabActiva == "pagos")
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Método de Pago</th>
+                                            <th>Factura Asociada</th>
+                                            <th class="text-end">Monto Abonado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (listaPagosPaginada.Any())
+                                        {
+                                            @foreach (var pago in listaPagosPaginada)
+                                            {
+                                                <tr>
+                                                    <td>@pago.FechaPago.ToString("dd/MM/yyyy HH:mm")</td>
+                                                    <td><span class="badge bg-info text-dark">@pago.MetodoPago</span></td>
+                                                    <td>@(string.IsNullOrEmpty(pago.NumeroFactura) ? "-" : pago.NumeroFactura)</td>
+                                                    <td class="text-end text-success fw-bold">$ @pago.Monto.ToString("N2")</td>
+                                                </tr>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted py-4">
+                                                    <i class="fa-solid fa-receipt fa-2x d-block mb-2 text-muted"></i>
+                                                    No se registraron pagos emitidos a este proveedor.
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- CONTROLES DE PAGINACIÓN PAGOS (estilo unificado con Proveedores.razor) -->
+                            <div class="pie-tabla mt-3 pt-2 border-top">
+                                <span class="info-registros">
+                                    Mostrando @listaPagosPaginada.Count() de @listaPagos.Count pagos
+                                </span>
+
+                                @if (totalPaginasPagos > 1)
+                                {
+                                    <div class="paginacion">
+                                        <button class="btn-pagina flecha"
+                                                @onclick="() => CambiarPaginaPagos(paginaPagos - 1)"
+                                                disabled="@(paginaPagos == 1)">
+                                            &lt;
+                                        </button>
+
+                                        @foreach (var pagina in PaginasVisiblesPagos)
+                                        {
+                                            <button class="@ObtenerClasePaginaPagos(pagina)"
+                                                    @onclick="() => CambiarPaginaPagos(pagina)">
+                                                @pagina
+                                            </button>
+                                        }
+
+                                        <button class="btn-pagina flecha"
+                                                @onclick="() => CambiarPaginaPagos(paginaPagos + 1)"
+                                                disabled="@(paginaPagos == totalPaginasPagos)">
+                                            &gt;
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else if (tabActiva == "notas")
+                        {
+                            <div class="p-2">
+                                <p class="text-dark bg-light p-3 rounded">
+                                    @(string.IsNullOrEmpty(proveedor.Direccion)
+                                        ? "No existen notas adicionales o información de dirección registrada."
+                                        : $"Dirección registrada: {proveedor.Direccion}")
+                                </p>
+                            </div>
+                        }
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN DERECHA: REGISTRAR PAGO -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm p-3">
+                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                        <i class="fa-solid fa-hand-holding-dollar text-info me-2"></i>Registrar Pago a Proveedor
+                    </h6>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Compra / Comprobante a Abonar <span class="text-danger">*</span></label>
+                        <select class="form-select" value="@idCompraSeleccionada" @onchange="OnCompraSeleccionadaChanged">
+                            <option value="0">-- Seleccionar Compra Pendiente --</option>
+                            @foreach (var c in listaCompras.Where(x => x.SaldoPendiente > 0))
+                            {
+                                <option value="@c.IdCompra">
+                                    @(string.IsNullOrEmpty(c.NumeroFactura) ? $"Compra #{c.IdCompra}" : c.NumeroFactura) - (Saldo: $@c.SaldoPendiente.ToString("N2"))
+                                </option>
+                            }
+                        </select>
+                        @if (!listaCompras.Any(x => x.SaldoPendiente > 0))
+                        {
+                            <small class="text-success d-block mt-1">
+                                <i class="fa-solid fa-circle-check me-1"></i> El proveedor no registra deudas pendientes.
+                            </small>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Monto a Abonar ($)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" @bind="montoPago" placeholder="0.00" min="0" step="0.01" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Medio de Pago</label>
+                        <select class="form-select" @bind="medioPago">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia Bancaria">Transferencia Bancaria</option>
+                            <option value="Mercado Pago">Mercado Pago</option>
+                            <option value="Cheque">Cheque</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Detalle / Concepto / Referencia</label>
+                        <textarea class="form-control" rows="3" @bind="conceptoPago" placeholder="Pago a cuenta, cancelación de factura X..."></textarea>
+                    </div>
+
+                    <button class="btn btn-info text-white w-100 fw-bold py-2 mt-2"
+                            @onclick="RegistrarPago"
+                            disabled="@(guardandoPago || idCompraSeleccionada == 0)">
+                        @if (guardandoPago)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            <span>Procesando...</span>
+                        }
+                        else
+                        {
+                            <i class="fa-solid fa-check me-1"></i>
+                            <span>Confirmar Pago</span>
+                        }
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    }
+
+</div>
+
+@code {
+    [Parameter] public int? IdProveedor { get; set; }
+
+    private ProveedorDto proveedor = new();
+    private ProveedorDto modeloFormulario = new();
+    private ProveedorResumenDto resumenProveedor = new();
+    private List<ProveedorHistorialCompraDto> listaCompras = new();
+    private List<ProveedorHistorialPagoDto> listaPagos = new();
+
+    private bool EsNuevo => !IdProveedor.HasValue || IdProveedor.Value == 0;
+    private bool modoEdicion = false;
+    private bool cargando = true;
+    private bool guardando = false;
+    private bool guardandoPago = false;
+
+    private string? mensajeError;
+    private string? mensajeExito;
+
+    private string tabActiva = "compras";
+
+    // Formulario de Pago
+    private int idCompraSeleccionada = 0;
+    private decimal montoPago;
+    private string medioPago = "Transferencia Bancaria";
+    private string conceptoPago = string.Empty;
+
+    // --- VARIABLES Y LÓGICA DE PAGINACIÓN CLIENTE ---
+    private int elementosPorPagina = 5;
+
+    // Paginación Compras
+    private int paginaCompras = 1;
+    private int totalPaginasCompras => (int)Math.Ceiling((double)listaCompras.Count / elementosPorPagina);
+    private IEnumerable<ProveedorHistorialCompraDto> listaComprasPaginada =>
+        listaCompras.Skip((paginaCompras - 1) * elementosPorPagina).Take(elementosPorPagina);
+
+    private IEnumerable<int> PaginasVisiblesCompras => ObtenerPaginasVisibles(paginaCompras, totalPaginasCompras);
+    private string ObtenerClasePaginaCompras(int pagina) =>
+        paginaCompras == pagina ? "btn-pagina activa" : "btn-pagina";
+
+    // Paginación Pagos
+    private int paginaPagos = 1;
+    private int totalPaginasPagos => (int)Math.Ceiling((double)listaPagos.Count / elementosPorPagina);
+    private IEnumerable<ProveedorHistorialPagoDto> listaPagosPaginada =>
+        listaPagos.Skip((paginaPagos - 1) * elementosPorPagina).Take(elementosPorPagina);
+
+    private IEnumerable<int> PaginasVisiblesPagos => ObtenerPaginasVisibles(paginaPagos, totalPaginasPagos);
+    private string ObtenerClasePaginaPagos(int pagina) =>
+        paginaPagos == pagina ? "btn-pagina activa" : "btn-pagina";
+
+    // Lógica de páginas visibles compartida (mismo criterio que Proveedores.razor)
+    private IEnumerable<int> ObtenerPaginasVisibles(int paginaActualLocal, int totalPaginasLocal)
+    {
+        if (totalPaginasLocal <= 5)
+        {
+            return Enumerable.Range(1, totalPaginasLocal);
+        }
+
+        var inicio = Math.Max(2, paginaActualLocal - 1);
+        var fin = Math.Min(totalPaginasLocal - 1, paginaActualLocal + 1);
+
+        if (paginaActualLocal <= 2)
+        {
+            inicio = 2;
+            fin = 4;
+        }
+
+        if (paginaActualLocal >= totalPaginasLocal - 1)
+        {
+            inicio = totalPaginasLocal - 3;
+            fin = totalPaginasLocal - 1;
+        }
+
+        return Enumerable.Range(inicio, fin - inicio + 1);
+    }
+
+    private void CambiarPaginaCompras(int nuevaPagina)
+    {
+        if (nuevaPagina >= 1 && nuevaPagina <= totalPaginasCompras)
+            paginaCompras = nuevaPagina;
+    }
+
+    private void CambiarPaginaPagos(int nuevaPagina)
+    {
+        if (nuevaPagina >= 1 && nuevaPagina <= totalPaginasPagos)
+            paginaPagos = nuevaPagina;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        cargando = true;
+        mensajeError = null;
+        mensajeExito = null;
+
+        try
+        {
+            string uri = Navigation.Uri;
+            if (uri.Contains("/proveedores/editar/"))
+            {
+                modoEdicion = true;
+            }
+            else if (uri.Contains("/proveedores/detalle/"))
+            {
+                modoEdicion = false;
+            }
+
+            if (!EsNuevo)
+            {
+                int id = IdProveedor!.Value;
+                var p = await ProveedorService.ObtenerProveedorPorId(id);
+                if (p != null)
+                {
+                    proveedor = p;
+                    modeloFormulario = new ProveedorDto
+                    {
+                        IdProveedor = p.IdProveedor,
+                        Nombre = p.Nombre,
+                        CUIT = p.CUIT,
+                        Telefono = p.Telefono,
+                        Email = p.Email,
+                        Direccion = p.Direccion,
+                        Estado = p.Estado
+                    };
+
+                    var resumen = await ProveedorService.ObtenerResumenProveedor(id);
+                    if (resumen != null)
+                    {
+                        resumenProveedor = resumen;
+                    }
+
+                    listaCompras = await ProveedorService.ObtenerHistorialComprasProveedor(id);
+                    listaPagos = await ProveedorService.ObtenerHistorialPagosProveedor(id);
+
+                    // Resetear páginas al cargar datos
+                    paginaCompras = 1;
+                    paginaPagos = 1;
+
+                    var compraConDeuda = listaCompras.FirstOrDefault(c => c.SaldoPendiente > 0);
+                    if (compraConDeuda != null)
+                    {
+                        idCompraSeleccionada = compraConDeuda.IdCompra;
+                        montoPago = compraConDeuda.SaldoPendiente;
+                    }
+                    else
+                    {
+                        idCompraSeleccionada = 0;
+                        montoPago = 0;
+                    }
+                }
+                else
+                {
+                    mensajeError = "No se encontró el proveedor solicitado.";
+                }
+            }
+            else
+            {
+                modoEdicion = true;
+                modeloFormulario = new ProveedorDto { Estado = 1 };
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar información: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void OnCompraSeleccionadaChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int idCompra))
+        {
+            idCompraSeleccionada = idCompra;
+            var compra = listaCompras.FirstOrDefault(c => c.IdCompra == idCompraSeleccionada);
+            montoPago = compra != null ? compra.SaldoPendiente : 0;
+        }
+    }
+
+    private void HabilitarModoEdicion()
+    {
+        modeloFormulario = new ProveedorDto
+        {
+            IdProveedor = proveedor.IdProveedor,
+            Nombre = proveedor.Nombre,
+            CUIT = proveedor.CUIT,
+            Telefono = proveedor.Telefono,
+            Email = proveedor.Email,
+            Direccion = proveedor.Direccion,
+            Estado = proveedor.Estado
+        };
+
+        modoEdicion = true;
+        Navigation.NavigateTo($"/proveedores/editar/{proveedor.IdProveedor}", false);
+    }
+
+    private void CancelarAccion()
+    {
+        if (EsNuevo)
+        {
+            Navigation.NavigateTo("/proveedores");
+        }
+        else
+        {
+            modoEdicion = false;
+            Navigation.NavigateTo($"/proveedores/detalle/{IdProveedor}", false);
+        }
+    }
+
+    private async Task GuardarProveedor()
+    {
+        guardando = true;
+        mensajeError = null;
+        mensajeExito = null;
+
+        try
+        {
+            if (EsNuevo)
+            {
+                var crearDto = new CrearProveedorDto
+                {
+                    Nombre = modeloFormulario.Nombre,
+                    CUIT = modeloFormulario.CUIT,
+                    Telefono = modeloFormulario.Telefono,
+                    Email = modeloFormulario.Email,
+                    Direccion = modeloFormulario.Direccion
+                };
+
+                await ProveedorService.CrearProveedor(crearDto);
+                Navigation.NavigateTo("/proveedores");
+            }
+            else
+            {
+                int targetId = IdProveedor.HasValue && IdProveedor.Value > 0
+                    ? IdProveedor.Value
+                    : (proveedor.IdProveedor > 0 ? proveedor.IdProveedor : modeloFormulario.IdProveedor);
+
+                var actualizarDto = new ActualizarProveedorDto
+                {
+                    IdProveedor = targetId,
+                    Nombre = modeloFormulario.Nombre,
+                    CUIT = modeloFormulario.CUIT,
+                    Telefono = modeloFormulario.Telefono,
+                    Email = modeloFormulario.Email,
+                    Direccion = modeloFormulario.Direccion
+                };
+
+                modeloFormulario.IdProveedor = targetId;
+                await ProveedorService.ActualizarProveedor(actualizarDto);
+                Navigation.NavigateTo("/proveedores");
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al guardar: {ex.Message}";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void SeleccionarTab(string tab)
+    {
+        tabActiva = tab;
+    }
+
+    private async Task RegistrarPago()
+    {
+        if (idCompraSeleccionada <= 0)
+        {
+            mensajeError = "Por favor, seleccione una compra/comprobante con saldo pendiente.";
+            return;
+        }
+
+        if (montoPago <= 0)
+        {
+            mensajeError = "Ingrese un monto mayor a cero para registrar el pago.";
+            return;
+        }
+
+        guardandoPago = true;
+        mensajeError = null;
+
+        try
+        {
+            var pagoDto = new RegistrarPagoProveedorDto
+            {
+                IdProveedor = proveedor.IdProveedor,
+                IdCompra = idCompraSeleccionada,
+                Monto = montoPago,
+                TipoPago = medioPago,
+                Observaciones = conceptoPago,
+                FechaPago = DateTime.Now
+            };
+
+            bool exito = await ProveedorService.RegistrarPagoProveedor(pagoDto);
+
+            if (exito)
+            {
+                mensajeExito = $"Pago de ${montoPago:N2} registrado exitosamente.";
+                montoPago = 0;
+                conceptoPago = string.Empty;
+                idCompraSeleccionada = 0;
+
+                await CargarDatos();
+            }
+            else
+            {
+                mensajeError = "No se pudo registrar el pago. Verifique los datos.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al registrar el pago: {ex.Message}";
+        }
+        finally
+        {
+            guardandoPago = false;
+        }
+    }
+}

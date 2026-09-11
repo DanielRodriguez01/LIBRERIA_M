@@ -1,6 +1,35 @@
 ﻿/* =======================================================
    ESTILOS GENERALES Y BOTONES SUPERIORES
 ======================================================= */
+.btn-secundario {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 22px;
+    background-color: #2F54EB;
+    color: #ffffff;
+    border: none;
+    border-radius: 30px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 6px rgba(47, 84, 235, 0.2);
+}
+
+    .btn-secundario:hover {
+        background-color: #1d39c4;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(47, 84, 235, 0.3);
+    }
+
+    .btn-secundario:active {
+        transform: translateY(0);
+    }
+
 .btn-editar-top {
     background-color: #39D5E8;
     color: white;

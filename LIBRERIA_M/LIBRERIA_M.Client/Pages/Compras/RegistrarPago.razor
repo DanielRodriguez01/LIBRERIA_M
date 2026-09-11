@@ -1,0 +1,228 @@
+﻿@page "/compras/pago/{Id:int}"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using Microsoft.AspNetCore.Components.Forms
+@using LIBRERIA_M.Client.Models
+@using LIBRERIA_M.Client.Services
+
+@inject CompraService CompraService
+@inject NavigationManager Navigation
+
+<PageTitle>Registrar Pago</PageTitle>
+
+<div class="page-container">
+
+    <!-- Botón de retorno ubicado arriba a la izquierda -->
+    <div class="header-acciones-top mb-4">
+        <button class="btn-secundario" @onclick='() => Navigation.NavigateTo("/compras")'>
+            <i class="fa-solid fa-arrow-left me-1"></i> Volver al Listado
+        </button>
+    </div>
+
+    <h1 class="titulo-modulo mb-4">REGISTRAR PAGO (COMPRA #@Id)</h1>
+
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong>Atención:</strong> @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    @if (cargando)
+    {
+        <div class="sin-registros">
+            <div class="spinner-border text-primary me-2" role="status"></div>
+            Cargando datos de la compra...
+        </div>
+    }
+    else if (compra == null)
+    {
+        <div class="sin-registros">
+            <i class="fa-solid fa-circle-exclamation fa-2x mb-2 d-block text-muted"></i>
+            No se encontró la compra requerida.
+        </div>
+    }
+    else if (compra.SaldoPendiente <= 0)
+    {
+        <div class="alert alert-success shadow-sm mb-4">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            Esta compra ya se encuentra completamente pagada.
+        </div>
+        <button class="btn-secundario" @onclick='() => Navigation.NavigateTo("/compras")'>Volver al Listado</button>
+    }
+    else
+    {
+        <!-- 1. RESUMEN FINANCIERO ACTUAL -->
+        <div class="card-principal mb-4">
+            <h5 class="subtitulo-card mb-3"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Estado Cuenta Proveedor</h5>
+
+            <div class="row g-3 text-center">
+                <div class="col-md-3">
+                    <span class="d-block text-muted small">Proveedor</span>
+                    <strong class="fs-6">@compra.NombreProveedor</strong>
+                </div>
+
+                <div class="col-md-3">
+                    <span class="d-block text-muted small">Total Compra</span>
+                    <h5 class="mb-0 fw-bold">$ @compra.TotalCompra.ToString("N2")</h5>
+                </div>
+
+                <div class="col-md-3">
+                    <span class="d-block text-muted small">Monto Pagado a la Fecha</span>
+                    <h5 class="mb-0 text-success fw-bold">$ @compra.TotalPagado.ToString("N2")</h5>
+                </div>
+
+                <div class="col-md-3">
+                    <span class="d-block text-muted small">Saldo Pendiente Actual</span>
+                    <h5 class="mb-0 text-danger fw-bold">$ @compra.SaldoPendiente.ToString("N2")</h5>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. FORMULARIO DE PAGO -->
+        <div class="card-principal mb-4">
+            <h5 class="subtitulo-card mb-3"><i class="fa-solid fa-hand-holding-dollar me-2"></i>Ingreso del Nuevo Pago</h5>
+
+            <EditForm Model="pagoDto" OnValidSubmit="GuardarPago">
+                <DataAnnotationsValidator />
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Fecha de Pago *</label>
+                        <InputDate class="form-control" @bind-Value="pagoDto.FechaPago" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Monto a Abonar ($) *</label>
+                        <InputNumber class="form-control" @bind-Value="pagoDto.Monto" />
+                    </div>
+
+                    <div class="col-md-4 text-center d-flex flex-column justify-content-center">
+                        <span class="d-block text-muted small">Nuevo Saldo Restante</span>
+                        <h4 class="mb-0 @(SaldoRestanteEstimado < 0 ? "text-danger" : "text-primary") fw-bold">
+                            $ @SaldoRestanteEstimado.ToString("N2")
+                        </h4>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Observaciones / Notas de Pago</label>
+                        <InputText class="form-control" placeholder="Ej: Pago en efectivo, Transferencia Bancaria, N° Transacción..." @bind-Value="pagoDto.Observaciones" />
+                    </div>
+                </div>
+
+                <!-- BOTONERA -->
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn-secundario" @onclick='() => Navigation.NavigateTo("/compras")'>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-principal" disabled="@guardando">
+                        @if (guardando)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span>Procesando Pago...</span>
+                        }
+                        else
+                        {
+                            <span><i class="fa-solid fa-floppy-disk me-1"></i> Confirmar Pago</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private CompraDetalleCompletoDto? compra;
+    private RegistrarPagoProveedorDto pagoDto = new();
+
+    private bool cargando = true;
+    private bool guardando = false;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCompra();
+    }
+
+    private async Task CargarCompra()
+    {
+        cargando = true;
+        mensajeError = null;
+
+        try
+        {
+            compra = await CompraService.ObtenerCompraPorId(Id);
+            if (compra != null)
+            {
+                pagoDto = new RegistrarPagoProveedorDto
+                {
+                    IdCompra = compra.IdCompra,
+                    FechaPago = DateTime.Now,
+                    Monto = compra.SaldoPendiente
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al obtener datos de la compra: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private decimal SaldoRestanteEstimado
+    {
+        get
+        {
+            if (compra == null) return 0;
+            return compra.SaldoPendiente - pagoDto.Monto;
+        }
+    }
+
+    private async Task GuardarPago()
+    {
+        mensajeError = null;
+
+        if (pagoDto.Monto <= 0)
+        {
+            mensajeError = "El monto ingresado debe ser mayor a $ 0.";
+            return;
+        }
+
+        if (compra != null && pagoDto.Monto > compra.SaldoPendiente)
+        {
+            mensajeError = $"El pago excede el saldo pendiente actual ($ {compra.SaldoPendiente:N2}).";
+            return;
+        }
+
+        guardando = true;
+
+        try
+        {
+            var exito = await CompraService.RegistrarPago(pagoDto);
+            if (exito)
+            {
+                Navigation.NavigateTo("/compras");
+            }
+            else
+            {
+                mensajeError = "No se pudo registrar el pago en el servidor.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Ocurrió un error al procesar el pago: {ex.Message}";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

@@ -1,6 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
-using LIBRERIA_M.Client.Models;
+using LIBRERIA_M.Client.Models.Clientes;
 
 namespace LIBRERIA_M.Client.Services
 {

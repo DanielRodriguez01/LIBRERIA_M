@@ -1,5 +1,5 @@
-﻿using LIBRERIA_M.Models;
-using LIBRERIA_M.Repositories;
+﻿using LIBRERIA_M.Models.Clientes;
+using LIBRERIA_M.Repositories.Cliente;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 

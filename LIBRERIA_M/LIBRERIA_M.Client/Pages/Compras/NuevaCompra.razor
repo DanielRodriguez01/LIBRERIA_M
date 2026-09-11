@@ -1,0 +1,624 @@
+﻿@page "/compras/nueva"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using LIBRERIA_M.Client.Models
+@using LIBRERIA_M.Client.Models.Proveedor
+@using LIBRERIA_M.Client.Models.Stock
+@using LIBRERIA_M.Client.Services
+
+@inject CompraService CompraService
+@inject ProductoService ProductoService
+@inject ProveedorService ProveedorService
+@inject NavigationManager Navigation
+
+<PageTitle>Nueva Compra</PageTitle>
+
+<div class="page-container">
+
+    <div class="header-acciones-top mb-4">
+        <button class="btn-volver" @onclick='() => Navigation.NavigateTo("/compras")'>
+            <i class="fa-solid fa-arrow-left me-2"></i> Volver al listado
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong>Atención:</strong> @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    <EditForm Model="compraDto" OnValidSubmit="GuardarCompra">
+        <DataAnnotationsValidator />
+
+        <!-- 1. ENCABEZADO DE COMPRA -->
+        <div class="card-principal mb-4">
+            <h5 class="subtitulo-card mb-3">DETALLES GENERALES</h5>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-bold mb-0">PROVEEDOR <span class="text-danger">*</span></label>
+                        <button type="button" class="btn-link-action" @onclick="AbrirModalNuevoProveedor">
+                            <i class="fa-solid fa-plus me-1"></i>Nuevo Proveedor
+                        </button>
+                    </div>
+                    <InputSelect class="form-select form-control-rounded" @bind-Value="compraDto.IdProveedor">
+                        <option value="0">-- Seleccionar Proveedor --</option>
+                        @foreach (var p in listaProveedores)
+                        {
+                            <option value="@p.IdProveedor">@p.Nombre</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">FECHA COMPRA <span class="text-danger">*</span></label>
+                    <InputDate class="form-control form-control-rounded" @bind-Value="compraDto.FechaCompra" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">N° FACTURA <span class="text-danger">*</span></label>
+                    <InputText class="form-control form-control-rounded" placeholder="Ej: F001-000123" @bind-Value="compraDto.NumeroFactura" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">REMITO</label>
+                    <InputText class="form-control form-control-rounded" placeholder="Ej: R001-000456" @bind-Value="compraDto.NumeroRemito" />
+                </div>
+
+                <div class="col-md-8">
+                    <label class="form-label fw-bold">OBSERVACIONES (Opcional)</label>
+                    <InputText class="form-control form-control-rounded" placeholder="Notas adicionales sobre la compra..." @bind-Value="compraDto.Observaciones" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. INGRESO DE PRODUCTOS -->
+        <div class="card-principal mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="subtitulo-card mb-0">PRODUCTOS COMPRADOS</h5>
+            </div>
+
+            <div class="row g-3 align-items-end mb-4">
+                <div class="col-md-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-bold mb-0">PRODUCTO <span class="text-danger">*</span></label>
+                        <button type="button" class="btn-link-action" @onclick="AbrirModalNuevoProducto">
+                            <i class="fa-solid fa-plus me-1"></i>Nuevo Producto
+                        </button>
+                    </div>
+                    <select class="form-select form-control-rounded" value="@itemTemporal.IdProducto" @onchange="OnProductoSeleccionado">
+                        <option value="0">-- Seleccionar Producto --</option>
+                        @foreach (var prod in listaProductos)
+                        {
+                            <option value="@prod.IdProducto">@prod.Nombre</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">CANTIDAD <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control form-control-rounded" min="1" @bind="itemTemporal.Cantidad" @bind:after="RecalcularTotales" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">COSTO UNIT. ($) <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" class="form-control form-control-rounded" @bind="itemTemporal.CostoUnitario" @bind:after="OnCostoCambiado" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">PRECIO SUGERIDO ($)</label>
+                    <input type="number" step="0.01" class="form-control form-control-rounded" @bind="itemTemporal.PrecioVentaSugerido" />
+                </div>
+
+                <div class="col-md-2">
+                    <button type="button" class="btn-agregar-item w-100" @onclick="AgregarItem">
+                        + AGREGAR PRODUCTO
+                    </button>
+                </div>
+            </div>
+
+            <!-- DETALLE DE LA GRILLA -->
+            @if (!compraDto.Detalles.Any())
+            {
+                <div class="sin-registros py-4 text-center">
+                    <i class="fa-solid fa-cart-flatbed fa-2x mb-2 d-block text-muted"></i>
+                    No se agregaron productos a la compra aún.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="tabla-modulo">
+                        <thead>
+                            <tr>
+                                <th>PRODUCTO</th>
+                                <th class="text-center">CANTIDAD</th>
+                                <th class="text-end">PRECIO UNITARIO</th>
+                                <th class="text-end">SUBTOTAL</th>
+                                <th class="text-center">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in compraDto.Detalles)
+                            {
+                                var nombreProducto = ObtenerNombreProducto(item.IdProducto);
+                                <tr>
+                                    <td class="fw-semibold">@nombreProducto</td>
+                                    <td class="text-center" style="max-width: 100px;">
+                                        <input type="number" class="form-control form-control-sm input-grid text-center" min="1" @bind="item.Cantidad" @bind:after="RecalcularTotales" />
+                                    </td>
+                                    <td class="text-end">$ @item.CostoUnitario.ToString("N2")</td>
+                                    <td class="text-end fw-bold">$ @item.Subtotal.ToString("N2")</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn-eliminar-item" @onclick="() => QuitarItem(item)" title="Eliminar producto">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- 3. RESUMEN Y PAGO INICIAL -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-7">
+                <div class="card-principal h-100">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">MONTO PAGADO ($)</label>
+                            <InputNumber class="form-control form-control-rounded" @bind-Value="compraDto.MontoInicialPagado" @bind-Value:after="RecalcularTotales" />
+                        </div>
+                        <div class="col-md-6 d-flex flex-column justify-content-center">
+                            <div class="resumen-linea">
+                                <span class="label">TOTAL COMPRA:</span>
+                                <span class="valor text-dark">$ @TotalCalculado.ToString("N2")</span>
+                            </div>
+                            <div class="resumen-linea">
+                                <span class="label">SALDO PENDIENTE:</span>
+                                <span class="valor @(SaldoCalculado > 0 ? "text-danger" : "text-success")">$ @SaldoCalculado.ToString("N2")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="card-principal h-100 d-flex flex-column justify-content-center align-items-start">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="fw-bold me-2">ESTADO:</span>
+                        <span class="badge-estado @(SaldoCalculado > 0 ? "badge-deuda" : "badge-pagado")">
+                            @(SaldoCalculado > 0 ? "CON DEUDA" : "PAGADO")
+                        </span>
+                    </div>
+                    <small class="text-muted">EL SALDO PENDIENTE SE GENERARÁ AUTOMÁTICAMENTE</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTONERA INFERIOR -->
+        <div class="d-flex justify-content-end gap-3 mb-4">
+            <button type="button" class="btn-cancelar" @onclick='() => Navigation.NavigateTo("/compras")'>
+                CANCELAR
+            </button>
+            <button type="submit" class="btn-guardar" disabled="@guardando">
+                @if (guardando)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span>GUARDANDO...</span>
+                }
+                else
+                {
+                    <span>GUARDAR COMPRA</span>
+                }
+            </button>
+        </div>
+    </EditForm>
+
+</div>
+
+<!-- MODAL NUEVO PROVEEDOR -->
+@if (mostrarModalProveedor)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-truck-field me-2 text-primary"></i>Nuevo Proveedor
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CerrarModalNuevoProveedor"></button>
+                </div>
+                <EditForm Model="nuevoProveedorDto" OnValidSubmit="GuardarNuevoProveedor">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(mensajeErrorModalProveedor))
+                        {
+                            <div class="alert alert-danger p-2 mb-3 small">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> @mensajeErrorModalProveedor
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nombre / Razón Social <span class="text-danger">*</span></label>
+                            <InputText class="form-control form-control-rounded" placeholder="Nombre de la empresa o proveedor" @bind-Value="nuevoProveedorDto.Nombre" />
+                            <ValidationMessage For="@(() => nuevoProveedorDto.Nombre)" class="text-danger small" />
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">CUIT</label>
+                                <InputText class="form-control form-control-rounded" placeholder="Ej: 30-12345678-9" @bind-Value="nuevoProveedorDto.CUIT" />
+                                <ValidationMessage For="@(() => nuevoProveedorDto.CUIT)" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Teléfono</label>
+                                <InputText class="form-control form-control-rounded" placeholder="Ej: 3511234567" @bind-Value="nuevoProveedorDto.Telefono" />
+                                <ValidationMessage For="@(() => nuevoProveedorDto.Telefono)" class="text-danger small" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Email</label>
+                            <InputText class="form-control form-control-rounded" placeholder="ejemplo@proveedor.com" @bind-Value="nuevoProveedorDto.Email" />
+                            <ValidationMessage For="@(() => nuevoProveedorDto.Email)" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">Dirección</label>
+                            <InputText class="form-control form-control-rounded" placeholder="Calle, Número, Ciudad" @bind-Value="nuevoProveedorDto.Direccion" />
+                            <ValidationMessage For="@(() => nuevoProveedorDto.Direccion)" class="text-danger small" />
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" @onclick="CerrarModalNuevoProveedor" disabled="@guardandoProveedor">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@guardandoProveedor">
+                            @if (guardandoProveedor)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                <span>Guardando...</span>
+                            }
+                            else
+                            {
+                                <span>Guardar Proveedor</span>
+                            }
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- MODAL NUEVO PRODUCTO (ALTA RÁPIDA) -->
+@if (mostrarModalProducto)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-box me-2 text-primary"></i>Nuevo Producto (Alta Rápida)
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CerrarModalNuevoProducto"></button>
+                </div>
+                <EditForm Model="nuevoProductoDto" OnValidSubmit="GuardarNuevoProducto">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(mensajeErrorModalProducto))
+                        {
+                            <div class="alert alert-danger p-2 mb-3 small">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> @mensajeErrorModalProducto
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nombre del Producto <span class="text-danger">*</span></label>
+                            <InputText class="form-control form-control-rounded" placeholder="Ej: Cuaderno A4 Tapa Dura" @bind-Value="nuevoProductoDto.Nombre" />
+                            <ValidationMessage For="@(() => nuevoProductoDto.Nombre)" class="text-danger small" />
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Precio Unitario / Venta ($) <span class="text-danger">*</span></label>
+                                <InputNumber class="form-control form-control-rounded" @bind-Value="nuevoProductoDto.PrecioUnitario" />
+                                <ValidationMessage For="@(() => nuevoProductoDto.PrecioUnitario)" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Stock Mínimo <span class="text-danger">*</span></label>
+                                <InputNumber class="form-control form-control-rounded" min="0" @bind-Value="nuevoProductoDto.StockMinimo" />
+                                <ValidationMessage For="@(() => nuevoProductoDto.StockMinimo)" class="text-danger small" />
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">Descripción (Opcional)</label>
+                            <InputTextArea class="form-control form-control-rounded" rows="2" placeholder="Detalles breves del producto..." @bind-Value="nuevoProductoDto.Descripcion" />
+                            <ValidationMessage For="@(() => nuevoProductoDto.Descripcion)" class="text-danger small" />
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" @onclick="CerrarModalNuevoProducto" disabled="@guardandoProducto">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@guardandoProducto">
+                            @if (guardandoProducto)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                <span>Guardando...</span>
+                            }
+                            else
+                            {
+                                <span>Guardar Producto</span>
+                            }
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private CrearCompraDto compraDto = new();
+    private CrearDetalleCompraDto itemTemporal = new() { Cantidad = 1 };
+    private List<ProveedorSelectorDto> listaProveedores = new();
+    private List<ProductoDto> listaProductos = new();
+
+    private string? mensajeError;
+    private bool guardando = false;
+
+    // Estado y modelos para el modal de nuevo proveedor
+    private bool mostrarModalProveedor = false;
+    private bool guardandoProveedor = false;
+    private string? mensajeErrorModalProveedor;
+    private CrearProveedorDto nuevoProveedorDto = new();
+
+    // Estado y modelos para el modal de nuevo producto
+    private bool mostrarModalProducto = false;
+    private bool guardandoProducto = false;
+    private string? mensajeErrorModalProducto;
+    private ProductoDto nuevoProductoDto = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            listaProveedores = await CompraService.ObtenerProveedoresSelector();
+            listaProductos = await ProductoService.ObtenerProductos();
+            compraDto.IdUsuario = 1;
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar los datos iniciales: {ex.Message}";
+        }
+    }
+
+    private void OnProductoSeleccionado(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int idProducto))
+        {
+            itemTemporal.IdProducto = idProducto;
+            var prod = listaProductos.FirstOrDefault(p => p.IdProducto == idProducto);
+            if (prod != null)
+            {
+                itemTemporal.CostoUnitario = prod.CostoPromedio;
+                CalcularSugeridoAuto();
+            }
+        }
+    }
+
+    private void OnCostoCambiado()
+    {
+        CalcularSugeridoAuto();
+        RecalcularTotales();
+    }
+
+    private void CalcularSugeridoAuto()
+    {
+        if (itemTemporal.CostoUnitario > 0 && itemTemporal.PrecioVentaSugerido == 0)
+        {
+            itemTemporal.PrecioVentaSugerido = itemTemporal.CostoUnitario * 2;
+        }
+    }
+
+    private void RecalcularTotales()
+    {
+        StateHasChanged();
+    }
+
+    private string ObtenerNombreProducto(int idProducto)
+    {
+        var prod = listaProductos.FirstOrDefault(p => p.IdProducto == idProducto);
+        return prod != null ? prod.Nombre : $"ID: {idProducto}";
+    }
+
+    private void AgregarItem()
+    {
+        mensajeError = null;
+
+        if (itemTemporal.IdProducto <= 0)
+        {
+            mensajeError = "Debe seleccionar un producto válido.";
+            return;
+        }
+
+        if (itemTemporal.Cantidad <= 0)
+        {
+            mensajeError = "La cantidad debe ser mayor a 0.";
+            return;
+        }
+
+        if (itemTemporal.CostoUnitario <= 0)
+        {
+            mensajeError = "El costo unitario debe ser mayor a $ 0.";
+            return;
+        }
+
+        compraDto.Detalles.Add(new CrearDetalleCompraDto
+        {
+            IdProducto = itemTemporal.IdProducto,
+            Cantidad = itemTemporal.Cantidad,
+            CostoUnitario = itemTemporal.CostoUnitario,
+            PrecioVentaSugerido = itemTemporal.PrecioVentaSugerido
+        });
+
+        itemTemporal = new CrearDetalleCompraDto { Cantidad = 1 };
+    }
+
+    private void QuitarItem(CrearDetalleCompraDto item)
+    {
+        compraDto.Detalles.Remove(item);
+        RecalcularTotales();
+    }
+
+    private void AbrirModalNuevoProveedor()
+    {
+        nuevoProveedorDto = new CrearProveedorDto();
+        mensajeErrorModalProveedor = null;
+        mostrarModalProveedor = true;
+    }
+
+    private void CerrarModalNuevoProveedor()
+    {
+        mostrarModalProveedor = false;
+        mensajeErrorModalProveedor = null;
+    }
+
+    private async Task GuardarNuevoProveedor()
+    {
+        mensajeErrorModalProveedor = null;
+        guardandoProveedor = true;
+
+        try
+        {
+            int idNuevoProveedor = await ProveedorService.CrearProveedor(nuevoProveedorDto);
+
+            if (idNuevoProveedor > 0)
+            {
+                listaProveedores = await CompraService.ObtenerProveedoresSelector();
+                compraDto.IdProveedor = idNuevoProveedor;
+                CerrarModalNuevoProveedor();
+            }
+            else
+            {
+                mensajeErrorModalProveedor = "No se pudo registrar el proveedor.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeErrorModalProveedor = $"Error al guardar el proveedor: {ex.Message}";
+        }
+        finally
+        {
+            guardandoProveedor = false;
+        }
+    }
+
+    private void AbrirModalNuevoProducto()
+    {
+        nuevoProductoDto = new ProductoDto
+        {
+            StockActual = 0,
+            StockMinimo = 5,
+            Estado = "Activo",
+            CostoPromedio = 0
+        };
+        mensajeErrorModalProducto = null;
+        mostrarModalProducto = true;
+    }
+
+    private void CerrarModalNuevoProducto()
+    {
+        mostrarModalProducto = false;
+        mensajeErrorModalProducto = null;
+    }
+
+    private async Task GuardarNuevoProducto()
+    {
+        mensajeErrorModalProducto = null;
+        guardandoProducto = true;
+
+        try
+        {
+            nuevoProductoDto.Estado = "Activo";
+            nuevoProductoDto.CostoPromedio = 0;
+
+            await ProductoService.CrearProducto(nuevoProductoDto);
+
+            listaProductos = await ProductoService.ObtenerProductos();
+
+            var prodCreado = listaProductos
+                .Where(p => p.Nombre.Trim().Equals(nuevoProductoDto.Nombre.Trim(), StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(p => p.IdProducto)
+                .FirstOrDefault();
+
+            if (prodCreado != null)
+            {
+                itemTemporal.IdProducto = prodCreado.IdProducto;
+                itemTemporal.CostoUnitario = nuevoProductoDto.PrecioUnitario;
+                itemTemporal.PrecioVentaSugerido = nuevoProductoDto.PrecioUnitario * 2;
+            }
+
+            CerrarModalNuevoProducto();
+        }
+        catch (Exception ex)
+        {
+            mensajeErrorModalProducto = $"Error al guardar el producto: {ex.Message}";
+        }
+        finally
+        {
+            guardandoProducto = false;
+        }
+    }
+
+    private decimal TotalCalculado => compraDto.Detalles.Sum(x => x.Subtotal);
+    private decimal SaldoCalculado => Math.Max(0, TotalCalculado - compraDto.MontoInicialPagado);
+
+    private async Task GuardarCompra()
+    {
+        mensajeError = null;
+
+        if (compraDto.IdProveedor <= 0)
+        {
+            mensajeError = "Por favor seleccione un proveedor.";
+            return;
+        }
+
+        if (!compraDto.Detalles.Any())
+        {
+            mensajeError = "Debe añadir al menos un producto al detalle de la compra.";
+            return;
+        }
+
+        guardando = true;
+        try
+        {
+            var exito = await CompraService.CrearCompra(compraDto);
+            if (exito)
+            {
+                Navigation.NavigateTo("/compras");
+            }
+            else
+            {
+                mensajeError = "No se pudo registrar la compra en el servidor.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Ocurrió un error al guardar: {ex.Message}";
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+}

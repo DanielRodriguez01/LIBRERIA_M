@@ -1,0 +1,251 @@
+﻿/* =======================================================
+   ESTILOS GENERALES Y BOTONES SUPERIORES
+======================================================= */
+/* Agregamos .btn-link para que coincida con el Razor */
+.btn-secundario,
+.btn.btn-outline-secondary,
+.btn.btn-link {
+    background-color: #1e3af3 !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 0.5rem 1.25rem !important;
+    border-radius: 50px !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease-in-out !important;
+    text-decoration: none !important;
+}
+
+    .btn-secundario:hover,
+    .btn.btn-outline-secondary:hover,
+    .btn.btn-link:hover {
+        background-color: #1228c2 !important;
+        color: #ffffff !important;
+    }
+
+.btn-editar-top {
+    background-color: #3B82F6;
+    color: #ffffff;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 22px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+    .btn-editar-top:hover {
+        background-color: #2563EB;
+        transform: translateY(-1px);
+    }
+
+    .btn-editar-top:active {
+        transform: translateY(0);
+    }
+
+/* =======================================================
+   TARJETAS SUPERIORES (INFORMACIÓN Y RESUMEN FINANCIERO)
+======================================================= */
+.card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #eef2f5;
+}
+
+/* Tipografía de la información comercial */
+.lh-lg strong {
+    color: #111827;
+    font-size: 0.9rem;
+}
+
+.lh-lg div {
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+/* Círculos con íconos financieros ($) */
+.circulo-icono-saldo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+}
+
+    .circulo-icono-saldo.saldo-ok {
+        background-color: #2ed573 !important;
+    }
+
+    .circulo-icono-saldo.saldo-deuda {
+        background-color: #ff4757 !important;
+    }
+
+/* Badges de Estado Comercial */
+.badge.bg-danger {
+    background-color: #FCA5A5 !important;
+    color: #991B1B !important;
+    border-radius: 20px;
+    font-weight: 700;
+    padding: 6px 14px;
+}
+
+.badge.bg-success {
+    background-color: #86EFAC !important;
+    color: #166534 !important;
+    border-radius: 20px;
+    font-weight: 700;
+    padding: 6px 14px;
+}
+
+/* =======================================================
+   PESTAÑAS / TABS DE NAVEGACIÓN INTERNA
+======================================================= */
+.nav-tabs {
+    border-bottom: 2px solid #e9ecef;
+}
+
+    .nav-tabs .nav-link {
+        color: #374151;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 10px 16px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+        .nav-tabs .nav-link:hover {
+            border-color: transparent;
+            color: #3B82F6;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #3B82F6;
+            background-color: transparent;
+            border-bottom: 3px solid #3B82F6;
+            font-weight: 700;
+        }
+
+/* =======================================================
+   TABLAS Y REGISTROS
+======================================================= */
+.table thead tr {
+    border-bottom: 2px solid #e9ecef;
+}
+
+.table th {
+    font-size: 0.8rem;
+    color: #6B7280;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.table td {
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+/* =======================================================
+   PANEL LATERAL Y FORMULARIO (REGISTRAR PAGO Y EDICIÓN)
+======================================================= */
+.input-group-text {
+    background-color: #F8F9FA;
+    border-color: #CED4DA;
+    color: #6B7280;
+}
+
+.btn-info {
+    background-color: #3B82F6 !important;
+    border-color: #3B82F6 !important;
+    border-radius: 20px;
+}
+
+    .btn-info:hover {
+        background-color: #2563EB !important;
+        border-color: #2563EB !important;
+    }
+
+.btn-light {
+    border-radius: 20px;
+    background-color: #E5E7EB;
+    color: #374151;
+    font-weight: 600;
+}
+
+    .btn-light:hover {
+        background-color: #D1D5DB;
+    }
+
+.btn-outline-danger {
+    border-radius: 20px;
+}
+
+/* Formulario de inputs */
+.form-control, .form-select {
+    border-radius: 8px;
+    font-size: 0.9rem;
+    border: 1px solid #E5E7EB;
+}
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #3B82F6;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+    }
+
+/* =======================================================
+   PIE DE TABLA Y PAGINACIÓN (mismo estilo que Proveedores.razor)
+======================================================= */
+.pie-tabla {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+}
+
+.info-registros {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+.paginacion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-pagina {
+    border: none;
+    background: transparent;
+    color: #374151;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+    .btn-pagina.activa {
+        background-color: #3B82F6;
+        color: #FFFFFF;
+    }
+
+    .btn-pagina:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
+.sin-registros {
+    text-align: center;
+    padding: 40px 20px;
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    color: #6B7280;
+    font-weight: 600;
+}

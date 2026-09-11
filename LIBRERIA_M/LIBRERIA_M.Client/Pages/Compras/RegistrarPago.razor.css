@@ -1,0 +1,129 @@
+﻿/* Contenedor Principal */
+.page-container {
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Header Superior */
+.header-acciones-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.titulo-modulo {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+/* Botón Superior Volver */
+.btn-secundario {
+    background-color: #1e3af3;
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    text-decoration: none;
+}
+
+    .btn-secundario:hover {
+        background-color: #1228c2;
+        color: #ffffff;
+    }
+
+/* Tarjeta Contenedora Principal */
+.card-principal {
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 1.75rem;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.subtitulo-card {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* Inputs y Selects Redondeados estilo Figma */
+::deep .form-control {
+    border-radius: 50px !important;
+    border: 1px solid #e0e0e0;
+    padding: 0.55rem 1.25rem;
+    font-size: 0.9rem;
+    background-color: #fafafa;
+    color: #333333;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+    ::deep .form-control:focus {
+        background-color: #ffffff;
+        border-color: #1e3af3;
+        box-shadow: 0 0 0 3px rgba(30, 58, 243, 0.15);
+        outline: none;
+    }
+
+/* Botonera de Acción Inferior */
+.btn-cancelar {
+    background-color: #ffe0e0;
+    color: #d32f2f;
+    border: none;
+    padding: 0.65rem 2rem;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+    .btn-cancelar:hover {
+        background-color: #ffcdd2;
+        color: #d32f2f;
+    }
+
+.btn-principal {
+    background-color: #2e7d32;
+    color: #ffffff;
+    border: none;
+    padding: 0.65rem 2.5rem;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+    .btn-principal:hover:not(:disabled) {
+        background-color: #1b5e20;
+        color: #ffffff;
+    }
+
+    .btn-principal:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+/* Estado Sin Registros / Alertas */
+.sin-registros {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    font-weight: 600;
+}

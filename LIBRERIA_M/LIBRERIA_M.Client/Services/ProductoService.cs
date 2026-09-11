@@ -1,5 +1,5 @@
 ﻿using System.Net.Http.Json;
-using LIBRERIA_M.Client.Models;
+using LIBRERIA_M.Client.Models.Stock;
 
 namespace LIBRERIA_M.Client.Services;
 

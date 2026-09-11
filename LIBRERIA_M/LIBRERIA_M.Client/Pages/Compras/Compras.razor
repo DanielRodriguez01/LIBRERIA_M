@@ -1,0 +1,398 @@
+﻿@page "/compras"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using Microsoft.AspNetCore.Components.Forms
+@using LIBRERIA_M.Client.Models
+@using LIBRERIA_M.Client.Services
+
+@inject CompraService CompraService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Compras</PageTitle>
+
+<div class="page-container">
+
+    <!-- CABECERA Y BOTÓN NUEVA COMPRA -->
+    <div class="header-modulo">
+        <h1 class="titulo-modulo">COMPRAS</h1>
+        <button class="btn-principal" @onclick='() => Navigation.NavigateTo("/compras/nueva")'>
+            + NUEVA COMPRA
+        </button>
+    </div>
+
+    <!-- MENSAJE DE ERROR GLOBAL -->
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong>Atención:</strong> @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    <!-- CARD CONTENEDORA PRINCIPAL -->
+    <div class="card-principal">
+
+        <!-- TOOLBAR: BUSCADOR Y FILTROS -->
+        <div class="toolbar-filtros">
+            <div class="campo-filtro campo-buscador">
+                <label class="label-filtro">BUSCAR COMPRA:</label>
+                <div class="input-icon-wrapper">
+                    <i class="fa-solid fa-magnifying-glass icon-search"></i>
+                    <input type="text"
+                           class="input-filtro"
+                           placeholder="BUSCAR POR Nº FACTURA O REMITO..."
+                           @bind="textoBusqueda"
+                           @bind:after="ReiniciarPaginaBusqueda"
+                           @bind:event="oninput" />
+                </div>
+            </div>
+
+            <div class="campo-filtro campo-estados">
+                <label class="label-filtro">ESTADOS:</label>
+                <div class="grupo-filtros">
+                    <button type="button" class="@ObtenerClaseFiltro("Todos")" @onclick='() => CambiarFiltro("Todos")'>
+                        Todos
+                    </button>
+                    <button type="button" class="@ObtenerClaseFiltro("PAGADO")" @onclick='() => CambiarFiltro("PAGADO")'>
+                        Pagados
+                    </button>
+                    <button type="button" class="@ObtenerClaseFiltro("PENDIENTE")" @onclick='() => CambiarFiltro("PENDIENTE")'>
+                        Pendientes
+                    </button>
+                    <button type="button" class="@ObtenerClaseFiltro("PARCIAL")" @onclick='() => CambiarFiltro("PARCIAL")'>
+                        Parciales
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA DE RESULTADOS -->
+        @if (cargando)
+        {
+            <div class="sin-registros">
+                <div class="spinner-border text-primary me-2" role="status"></div>
+                Cargando listado de compras...
+            </div>
+        }
+        else if (!ComprasPaginadas.Any())
+        {
+            <div class="sin-registros">
+                <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-muted"></i>
+                No se encontraron compras registradas.
+            </div>
+        }
+        else
+        {
+            <div class="tabla-container">
+                <table class="tabla-compras">
+                    <thead>
+                        <tr>
+                            <th>FECHA</th>
+                            <th>PROVEEDOR</th>
+                            <th>Nº FACTURA</th>
+                            <th>Nº REMITO</th>
+                            <th class="text-right">TOTAL</th>
+                            <th class="text-right">SALDO</th>
+                            <th class="text-center">ESTADO</th>
+                            <th class="text-center">ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in ComprasPaginadas)
+                        {
+                            <tr>
+                                <td>@c.FechaCompra.ToString("dd/MM/yyyy")</td>
+                                <td><strong>@c.NombreProveedor</strong></td>
+                                <td>@(string.IsNullOrEmpty(c.NumeroFactura) ? "-" : c.NumeroFactura)</td>
+                                <td>@(string.IsNullOrEmpty(c.NumeroRemito) ? "-" : c.NumeroRemito)</td>
+                                <td class="text-right">$ @c.TotalCompra.ToString("N2")</td>
+                                <td class="text-right @ObtenerClaseSaldo(c)">
+                                    $ @c.SaldoPendiente.ToString("N2")
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge-estado @ObtenerClaseBadgeEstado(c.Estado)">
+                                        @c.Estado
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="acciones-cell">
+                                        <button class="btn-accion"
+                                                title="Ver Detalle"
+                                                @onclick='() => Navigation.NavigateTo($"/compras/detalle/{c.IdCompra}")'>
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+
+                                        @if (c.SaldoPendiente > 0)
+                                        {
+                                            <button class="btn-accion"
+                                                    title="Registrar Pago"
+                                                    @onclick='() => Navigation.NavigateTo($"/compras/pago/{c.IdCompra}")'>
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <!-- PIE DE TABLA Y PAGINACIÓN -->
+        <div class="footer-tabla">
+            <span class="info-registros">
+                MOSTRANDO @ComprasPaginadas.Count() DE @ComprasFiltradasBase.Count() COMPRAS
+            </span>
+
+            @if (TotalPaginas > 1)
+            {
+                <div class="paginacion">
+                    <button class="btn-pagina"
+                            @onclick="() => CambiarPagina(paginaActual - 1)"
+                            disabled="@(paginaActual == 1)">
+                        &lt;
+                    </button>
+
+                    @foreach (var pagina in PaginasVisibles)
+                    {
+                        <button class="@ObtenerClasePagina(pagina)"
+                                @onclick="() => CambiarPagina(pagina)">
+                            @pagina
+                        </button>
+                    }
+
+                    <button class="btn-pagina"
+                            @onclick="() => CambiarPagina(paginaActual + 1)"
+                            disabled="@(paginaActual == TotalPaginas)">
+                        &gt;
+                    </button>
+                </div>
+            }
+        </div>
+
+    </div>
+
+    <!-- CARD INFORMATIVA DE LEYENDA (FIGMA) -->
+    <div class="card-leyenda">
+        <div class="leyenda-info">
+            <div class="icon-info">i</div>
+            <div class="texto-info">
+                PARA REGISTRAR UN PAGO,<br />
+                INGRESE AL DETALLE DE LA COMPRA O HAGA CLIC EN EL ÍCONO DE PAGO
+            </div>
+        </div>
+        <div class="leyenda-estados">
+            <div class="leyenda-item">
+                <span class="tag-pagado">PAGADO:</span> SIN DEUDA PENDIENTE
+            </div>
+            <div class="leyenda-item">
+                <span class="tag-parcial">PARCIAL:</span> TIENE PAGOS PARCIALES REGISTRADOS
+            </div>
+            <div class="leyenda-item">
+                <span class="tag-deuda">PENDIENTE:</span> CON DEUDA TOTAL PENDIENTE
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private List<CompraListadoDto> listaComprasCompleta = new();
+
+    private string filtroActivo = "Todos";
+    private string textoBusqueda = string.Empty;
+    private string? mensajeError = null;
+
+    private bool cargando = true;
+    private int paginaActual = 1;
+    private const int registrosPorPagina = 5;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCompras();
+    }
+
+    private async Task CargarCompras()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            listaComprasCompleta = await CompraService.ListarCompras();
+            AjustarPaginaActual();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al obtener datos: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private IEnumerable<CompraListadoDto> ComprasFiltradasBase
+    {
+        get
+        {
+            var resultado = listaComprasCompleta.AsEnumerable();
+
+            if (filtroActivo != "Todos")
+            {
+                resultado = resultado.Where(c => EsEstadoCoincidente(c, filtroActivo));
+            }
+
+            if (!string.IsNullOrWhiteSpace(textoBusqueda))
+            {
+                var txt = textoBusqueda.Trim().ToLower();
+                resultado = resultado.Where(c =>
+                    (c.NombreProveedor?.ToLower().Contains(txt) ?? false) ||
+                    (c.NumeroFactura?.ToLower().Contains(txt) ?? false) ||
+                    (c.NumeroRemito?.ToLower().Contains(txt) ?? false)
+                );
+            }
+
+            return resultado;
+        }
+    }
+
+    private bool EsEstadoCoincidente(CompraListadoDto c, string filtro)
+    {
+        if (string.IsNullOrEmpty(c.Estado)) return false;
+
+        var estadoLimpio = c.Estado.Trim().ToUpper();
+
+        return filtro switch
+        {
+            "PAGADO" => estadoLimpio.StartsWith("PAGAD") || c.SaldoPendiente == 0,
+            "PENDIENTE" => estadoLimpio.StartsWith("PENDIENTE") || (c.SaldoPendiente > 0 && c.SaldoPendiente == c.TotalCompra),
+            "PARCIAL" => estadoLimpio.StartsWith("PARCIAL") || (c.SaldoPendiente > 0 && c.SaldoPendiente < c.TotalCompra),
+            _ => estadoLimpio.Equals(filtro, StringComparison.OrdinalIgnoreCase)
+        };
+    }
+
+    private IEnumerable<CompraListadoDto> ComprasPaginadas =>
+        ComprasFiltradasBase
+            .Skip((paginaActual - 1) * registrosPorPagina)
+            .Take(registrosPorPagina);
+
+    private int TotalPaginas =>
+        (int)Math.Ceiling(
+            ComprasFiltradasBase.Count()
+            / (double)registrosPorPagina);
+
+    private void CambiarPagina(int pagina)
+    {
+        if (pagina < 1 || pagina > TotalPaginas)
+            return;
+
+        paginaActual = pagina;
+    }
+
+    private void CambiarFiltro(string nuevoFiltro)
+    {
+        if (filtroActivo != nuevoFiltro)
+        {
+            filtroActivo = nuevoFiltro;
+            paginaActual = 1;
+        }
+    }
+
+    private string ObtenerClaseFiltro(string filtro)
+    {
+        if (filtroActivo != filtro) return "btn-filtro";
+
+        return filtro switch
+        {
+            "Todos" => "btn-filtro activo-todos",
+            "PAGADO" => "btn-filtro activo-pagado",
+            "PENDIENTE" => "btn-filtro activo-pendiente",
+            "PARCIAL" => "btn-filtro activo-parcial",
+            _ => "btn-filtro"
+        };
+    }
+
+    private string ObtenerClaseBadgeEstado(string estado)
+    {
+        if (string.IsNullOrEmpty(estado)) return "";
+        var est = estado.ToUpper().Trim();
+
+        if (est.StartsWith("PAGAD")) return "estado-pagado";
+        if (est.StartsWith("PARCIAL")) return "estado-parcial";
+        if (est.StartsWith("PENDIENTE")) return "estado-deuda";
+
+        return "";
+    }
+
+    private string ObtenerClaseSaldo(CompraListadoDto c)
+    {
+        if (c.SaldoPendiente <= 0) return "";
+
+        var est = c.Estado?.ToUpper().Trim() ?? "";
+
+        if (est.StartsWith("PARCIAL") || (c.SaldoPendiente > 0 && c.SaldoPendiente < c.TotalCompra))
+        {
+            return "saldo-parcial fw-bold";
+        }
+
+        return "text-danger fw-bold";
+    }
+
+    private void ReiniciarPaginaBusqueda()
+    {
+        paginaActual = 1;
+        StateHasChanged();
+    }
+
+    private void AjustarPaginaActual()
+    {
+        if (TotalPaginas == 0)
+        {
+            paginaActual = 1;
+            return;
+        }
+
+        if (paginaActual > TotalPaginas)
+        {
+            paginaActual = TotalPaginas;
+        }
+    }
+
+    private IEnumerable<int> PaginasVisibles
+    {
+        get
+        {
+            if (TotalPaginas <= 5)
+            {
+                return Enumerable.Range(1, TotalPaginas);
+            }
+
+            var inicio = Math.Max(2, paginaActual - 1);
+            var fin = Math.Min(TotalPaginas - 1, paginaActual + 1);
+
+            if (paginaActual <= 2)
+            {
+                inicio = 2;
+                fin = 4;
+            }
+
+            if (paginaActual >= TotalPaginas - 1)
+            {
+                inicio = TotalPaginas - 3;
+                fin = TotalPaginas - 1;
+            }
+
+            return Enumerable.Range(inicio, fin - inicio + 1);
+        }
+    }
+
+    private string ObtenerClasePagina(int pagina)
+    {
+        return paginaActual == pagina
+            ? "btn-pagina activa"
+            : "btn-pagina";
+    }
+}

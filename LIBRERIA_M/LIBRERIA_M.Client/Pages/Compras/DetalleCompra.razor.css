@@ -1,0 +1,153 @@
+﻿/* Layout General */
+.page-container {
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Header Superior */
+.header-acciones-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.titulo-modulo {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+/* Botón Volver al Listado */
+.btn-secundario {
+    background-color: #1e3af3;
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+    .btn-secundario:hover {
+        background-color: #1228c2;
+        color: #ffffff;
+    }
+
+/* Tarjetas */
+.card-principal {
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 1.5rem;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.subtitulo-card {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* Badges de Estado */
+.badge-estado {
+    padding: 0.35rem 1rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.estado-condeuda, .badge-deuda {
+    background-color: #ffe5e5;
+    color: #e53935;
+}
+
+.estado-aldia, .badge-pagado {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.estado-parcial {
+    background-color: #fff3e0;
+    color: #ef6c00;
+}
+
+/* Tabla de Productos */
+.tabla-modulo {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+}
+
+    .tabla-modulo th {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #555555;
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid #f0f0f0;
+        text-transform: uppercase;
+    }
+
+    .tabla-modulo td {
+        background-color: #ffffff;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        border-top: 1px solid #f0f0f0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+        .tabla-modulo td:first-child {
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+            border-left: 1px solid #f0f0f0;
+        }
+
+        .tabla-modulo td:last-child {
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+            border-right: 1px solid #f0f0f0;
+        }
+
+.col-nombre {
+    font-weight: 600;
+    color: #333333;
+}
+
+/* Botón Registrar Pago */
+.btn-principal {
+    background-color: #2e7d32;
+    color: #ffffff;
+    border: none;
+    padding: 0.65rem 2rem;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+    .btn-principal:hover {
+        background-color: #1b5e20;
+        color: #ffffff;
+    }
+
+/* Estado Sin Registros */
+.sin-registros {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    font-weight: 600;
+}

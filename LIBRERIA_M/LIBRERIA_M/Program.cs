@@ -1,11 +1,15 @@
 using LIBRERIA_M.Client.Pages;
+using LIBRERIA_M.Client.Services;
 using LIBRERIA_M.Components;
 using LIBRERIA_M.Data;
-using LIBRERIA_M.Repositories;
-using LIBRERIA_M.Client.Services;
+using LIBRERIA_M.Repositories.Cliente;
+using LIBRERIA_M.Repositories.Compra;
+using LIBRERIA_M.Repositories.Producto;
+using LIBRERIA_M.Repositories.Proveedor;
 using System.Net.Http;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Services.AddControllers();
 
 // Add services to the container.
@@ -15,6 +19,8 @@ builder.Services.AddRazorComponents()
 builder.Services.AddScoped<SqlConnectionFactory>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<ICompraRepository, CompraRepository>(); // Registro del Repositorio de Compras
+builder.Services.AddScoped<IProveedorRepository, ProveedorRepository>();
 
 // Modificado para que tome automáticamente localhost en tu PC y itempurl en la nube
 builder.Services.AddScoped(sp =>
@@ -28,6 +34,7 @@ builder.Services.AddScoped(sp =>
 
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProductoService>();
+builder.Services.AddScoped<CompraService>();
 
 var app = builder.Build();
 
@@ -41,13 +48,14 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
 }
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+
 app.UseHttpsRedirection();
-
 app.UseAntiforgery();
-
 app.MapStaticAssets();
 app.MapControllers();
+
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(LIBRERIA_M.Client._Imports).Assembly);

@@ -1,0 +1,380 @@
+﻿@page "/proveedores"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using Microsoft.AspNetCore.Components.Forms
+@using LIBRERIA_M.Client.Models.Proveedor
+@using LIBRERIA_M.Client.Services
+
+@inject ProveedorService ProveedorService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Proveedores</PageTitle>
+
+<div class="page-container">
+
+    <!-- TÍTULO DE LA VISTA -->
+    <h1 class="titulo-modulo">PROVEEDORES (LISTADO)</h1>
+
+    <!-- MENSAJE DE ERROR GLOBAL -->
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong>Atención:</strong> @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    <!-- CARD CONTENEDORA PRINCIPAL -->
+    <div class="card-principal">
+
+        <!-- TOOLBAR: BUSCADOR Y BOTÓN NUEVO -->
+        <div class="toolbar-acciones">
+            <div class="contenedor-busqueda">
+                <i class="fa-solid fa-magnifying-glass icono-busqueda"></i>
+                <input type="text"
+                       class="input-busqueda"
+                       placeholder="Buscar proveedor por CUIT, nombre, email..."
+                       @bind="textoBusqueda"
+                       @bind:after="ReiniciarPaginaBusqueda"
+                       @bind:event="oninput" />
+            </div>
+
+            <button class="btn-principal" @onclick='() => Navigation.NavigateTo("/proveedores/nuevo")'>
+                + Nuevo Proveedor
+            </button>
+        </div>
+
+        <!-- FILTROS POR ESTADO -->
+        <div class="filtros">
+            <span class="titulo-filtro">Filtrar por estado:</span>
+            <div class="grupo-filtros">
+                <button class="@ObtenerClaseFiltro("Todos")"
+                        @onclick='() => CambiarFiltro("Todos")'>
+                    Todos
+                </button>
+                <button class="@ObtenerClaseFiltro("Activos")"
+                        @onclick='() => CambiarFiltro("Activos")'>
+                    Activos
+                </button>
+                <button class="@ObtenerClaseFiltro("Inactivos")"
+                        @onclick='() => CambiarFiltro("Inactivos")'>
+                    Inactivos
+                </button>
+            </div>
+        </div>
+
+        <!-- TABLA DENTRO DEL CONTENEDOR -->
+        @if (cargando)
+        {
+            <div class="sin-registros">
+                <div class="spinner-border text-primary me-2" role="status"></div>
+                Cargando listado de proveedores...
+            </div>
+        }
+        else if (!ProveedoresPaginados.Any())
+        {
+            <div class="sin-registros">
+                <i class="fa-solid fa-folder-open fa-2x mb-2 d-block text-muted"></i>
+                No se encontraron proveedores registrados.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="tabla-modulo">
+                    <thead>
+                        <tr>
+                            <th>CUIT</th>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Gmail</th>
+                            <th>Dirección</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in ProveedoresPaginados)
+                        {
+                            <tr>
+                                <td>@(string.IsNullOrEmpty(p.CUIT) ? "-" : p.CUIT)</td>
+                                <td class="col-nombre">@p.Nombre</td>
+                                <td>@(string.IsNullOrEmpty(p.Telefono) ? "-" : p.Telefono)</td>
+                                <td>@(string.IsNullOrEmpty(p.Email) ? "-" : p.Email)</td>
+                                <td>@(string.IsNullOrEmpty(p.Direccion) ? "-" : p.Direccion)</td>
+                                <td class="text-center">
+                                    @if (p.Estado == 1)
+                                    {
+                                        <span class="badge-estado estado-aldia">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-estado estado-condeuda">Inactivo</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <div class="acciones-container">
+                                        <button class="btn-accion"
+                                                title="Ver Detalle de Proveedor"
+                                                @onclick='() => Navigation.NavigateTo($"/proveedores/detalle/{p.IdProveedor}")'>
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+
+                                        @if (p.Estado == 1)
+                                        {
+                                            <button class="btn-accion btn-eliminar"
+                                                    title="Desactivar Proveedor"
+                                                    @onclick="() => ConfirmarCambioEstado(p, false)">
+                                                <i class="fa-regular fa-trash-can"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn-accion text-success"
+                                                    title="Activar Proveedor"
+                                                    @onclick="() => ConfirmarCambioEstado(p, true)">
+                                                <i class="fa-solid fa-rotate-left"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <!-- PAGINACIÓN -->
+        <div class="pie-tabla">
+            <span class="info-registros">
+                Mostrando @ProveedoresPaginados.Count() de @ProveedoresFiltradosBase.Count() proveedores
+            </span>
+
+            @if (TotalPaginas > 1)
+            {
+                <div class="paginacion">
+                    <button class="btn-pagina flecha"
+                            @onclick="() => CambiarPagina(paginaActual - 1)"
+                            disabled="@(paginaActual == 1)">
+                        &lt;
+                    </button>
+
+                    @foreach (var pagina in PaginasVisibles)
+                    {
+                        <button class="@ObtenerClasePagina(pagina)"
+                                @onclick="() => CambiarPagina(pagina)">
+                            @pagina
+                        </button>
+                    }
+
+                    <button class="btn-pagina flecha"
+                            @onclick="() => CambiarPagina(paginaActual + 1)"
+                            disabled="@(paginaActual == TotalPaginas)">
+                        &gt;
+                    </button>
+                </div>
+            }
+        </div>
+
+    </div>
+
+</div>
+
+@code {
+    private List<ProveedorDto> listaProveedoresCompleta = new();
+
+    private string filtroActivo = "Todos";
+    private string textoBusqueda = string.Empty;
+    private string? mensajeError = null;
+
+    private bool cargando = true;
+
+    private int paginaActual = 1;
+    private const int registrosPorPagina = 5;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProveedores();
+    }
+
+    private async Task CargarProveedores()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            bool soloActivos = filtroActivo == "Activos";
+            listaProveedoresCompleta = await ProveedorService.ListarProveedores(filtroActivo == "Activos");
+
+            AjustarPaginaActual();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al obtener datos: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private IEnumerable<ProveedorDto> ProveedoresFiltradosBase
+    {
+        get
+        {
+            IEnumerable<ProveedorDto> resultado = listaProveedoresCompleta;
+
+            if (filtroActivo == "Activos")
+            {
+                resultado = resultado.Where(p => p.Estado == 1);
+            }
+            else if (filtroActivo == "Inactivos")
+            {
+                resultado = resultado.Where(p => p.Estado == 0);
+            }
+
+            if (!string.IsNullOrWhiteSpace(textoBusqueda))
+            {
+                var txt = textoBusqueda.Trim().ToLower();
+                resultado = resultado.Where(p =>
+                    (p.Nombre?.ToLower().Contains(txt) ?? false) ||
+                    (p.CUIT?.ToLower().Contains(txt) ?? false) ||
+                    (p.Email?.ToLower().Contains(txt) ?? false) ||
+                    (p.Telefono?.ToLower().Contains(txt) ?? false)
+                );
+            }
+
+            return resultado;
+        }
+    }
+
+    private IEnumerable<ProveedorDto> ProveedoresPaginados =>
+        ProveedoresFiltradosBase
+            .Skip((paginaActual - 1) * registrosPorPagina)
+            .Take(registrosPorPagina);
+
+    private int TotalPaginas =>
+        (int)Math.Ceiling(
+            ProveedoresFiltradosBase.Count()
+            / (double)registrosPorPagina);
+
+    private void CambiarPagina(int pagina)
+    {
+        if (pagina < 1 || pagina > TotalPaginas)
+            return;
+
+        paginaActual = pagina;
+    }
+
+    private async Task CambiarFiltro(string nuevoFiltro)
+    {
+        if (filtroActivo != nuevoFiltro)
+        {
+            filtroActivo = nuevoFiltro;
+            paginaActual = 1;
+            await CargarProveedores();
+        }
+    }
+
+    private string ObtenerClaseFiltro(string filtro)
+    {
+        if (filtroActivo != filtro) return "btn-filtro";
+
+        return filtro switch
+        {
+            "Todos" => "btn-filtro activo-todos",
+            "Activos" => "btn-filtro activo-aldia",
+            "Inactivos" => "btn-filtro activo-condeuda",
+            _ => "btn-filtro"
+        };
+    }
+
+    private void ReiniciarPaginaBusqueda()
+    {
+        paginaActual = 1;
+        StateHasChanged();
+    }
+
+    private void AjustarPaginaActual()
+    {
+        if (TotalPaginas == 0)
+        {
+            paginaActual = 1;
+            return;
+        }
+
+        if (paginaActual > TotalPaginas)
+        {
+            paginaActual = TotalPaginas;
+        }
+    }
+
+    private IEnumerable<int> PaginasVisibles
+    {
+        get
+        {
+            if (TotalPaginas <= 5)
+            {
+                return Enumerable.Range(1, TotalPaginas);
+            }
+
+            var inicio = Math.Max(2, paginaActual - 1);
+            var fin = Math.Min(TotalPaginas - 1, paginaActual + 1);
+
+            if (paginaActual <= 2)
+            {
+                inicio = 2;
+                fin = 4;
+            }
+
+            if (paginaActual >= TotalPaginas - 1)
+            {
+                inicio = TotalPaginas - 3;
+                fin = TotalPaginas - 1;
+            }
+
+            return Enumerable.Range(inicio, fin - inicio + 1);
+        }
+    }
+
+    private string ObtenerClasePagina(int pagina)
+    {
+        return paginaActual == pagina
+            ? "btn-pagina activa"
+            : "btn-pagina";
+    }
+
+    private async Task ConfirmarCambioEstado(ProveedorDto proveedor, bool activar)
+    {
+        mensajeError = null;
+        string accion = activar ? "activar" : "desactivar";
+
+        bool confirmado = await JS.InvokeAsync<bool>(
+                    "confirm",
+                    $"¿Está seguro de {accion} al proveedor '{proveedor.Nombre}'?");
+
+        if (confirmado)
+        {
+            try
+            {
+                if (activar)
+                {
+                    await ProveedorService.ActivarProveedor(proveedor.IdProveedor);
+                }
+                else
+                {
+                    await ProveedorService.DesactivarProveedor(proveedor.IdProveedor);
+                }
+
+                await CargarProveedores();
+            }
+            catch (Exception ex)
+            {
+                mensajeError = ex.Message;
+            }
+        }
+    }
+}

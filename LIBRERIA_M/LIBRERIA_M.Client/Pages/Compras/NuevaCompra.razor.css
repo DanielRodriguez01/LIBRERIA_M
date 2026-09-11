@@ -1,0 +1,227 @@
+﻿/* Contenedor Principal */
+.page-container {
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Botón Superior Volver */
+.btn-volver {
+    background-color: #1e3af3;
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+}
+
+    .btn-volver:hover {
+        background-color: #1228c2;
+        color: #ffffff;
+    }
+
+/* Tarjeta Contenedora Principal */
+.card-principal {
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 1.75rem;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.subtitulo-card {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    letter-spacing: 0.5px;
+}
+
+/* Inputs y Selects Redondeados estilo Figma */
+.form-control-rounded {
+    border-radius: 50px !important;
+    border: 1px solid #e0e0e0;
+    padding: 0.55rem 1.25rem;
+    font-size: 0.9rem;
+    background-color: #fafafa;
+    color: #333333;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+    .form-control-rounded:focus {
+        background-color: #ffffff;
+        border-color: #1e3af3;
+        box-shadow: 0 0 0 3px rgba(30, 58, 243, 0.15);
+    }
+
+/* Botones Link para Alta Rápida (+ Nuevo Proveedor / + Nuevo Producto) */
+.btn-link-action {
+    background: none;
+    border: none;
+    color: #1e3af3;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+    .btn-link-action:hover {
+        color: #1228c2;
+    }
+
+/* Botón Agregar Producto a la Tabla */
+.btn-agregar-item {
+    background-color: #1e3af3;
+    color: #ffffff;
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    transition: background-color 0.2s;
+}
+
+    .btn-agregar-item:hover {
+        background-color: #1228c2;
+    }
+
+/* Tabla de Productos */
+.tabla-modulo {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+}
+
+    .tabla-modulo th {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #555555;
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .tabla-modulo td {
+        background-color: #ffffff;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        border-top: 1px solid #f0f0f0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+        .tabla-modulo td:first-child {
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+            border-left: 1px solid #f0f0f0;
+        }
+
+        .tabla-modulo td:last-child {
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+            border-right: 1px solid #f0f0f0;
+        }
+
+.input-grid {
+    border-radius: 8px;
+    border: 1px solid #d0d0d0;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Botón Eliminar de la Grilla */
+.btn-eliminar-item {
+    background: #ffebee;
+    border: 1px solid #ffcdd2;
+    color: #d32f2f;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .btn-eliminar-item:hover {
+        background-color: #d32f2f;
+        color: #ffffff;
+    }
+
+/* Resumen y Bloque de Estado */
+.resumen-linea {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+    .resumen-linea .label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #444444;
+    }
+
+    .resumen-linea .valor {
+        font-size: 1.1rem;
+        font-weight: 800;
+    }
+
+/* Badges de Estado */
+.badge-estado {
+    padding: 0.35rem 1rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.badge-deuda {
+    background-color: #ffe5e5;
+    color: #e53935;
+}
+
+.badge-pagado {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Botonera Inferior */
+.btn-cancelar {
+    background-color: #ffe0e0;
+    color: #d32f2f;
+    border: none;
+    padding: 0.65rem 2rem;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    transition: background-color 0.2s;
+}
+
+    .btn-cancelar:hover {
+        background-color: #ffcdd2;
+    }
+
+.btn-guardar {
+    background-color: #81c784;
+    color: #1b5e20;
+    border: none;
+    padding: 0.65rem 2.5rem;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    transition: background-color 0.2s;
+}
+
+    .btn-guardar:hover:not(:disabled) {
+        background-color: #66bb6a;
+    }
+
+    .btn-guardar:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }

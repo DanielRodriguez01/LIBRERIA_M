@@ -1,0 +1,200 @@
+﻿@page "/compras/detalle/{Id:int}"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using LIBRERIA_M.Client.Models
+@using LIBRERIA_M.Client.Services
+
+@inject CompraService CompraService
+@inject NavigationManager Navigation
+
+<PageTitle>Detalle de Compra</PageTitle>
+
+<div class="page-container">
+
+    <!-- Botón de retorno ubicado arriba a la izquierda -->
+    <div class="header-acciones-top mb-4">
+        <button class="btn-secundario" @onclick='() => Navigation.NavigateTo("/compras")'>
+            <i class="fa-solid fa-arrow-left me-1"></i> Volver al Listado
+        </button>
+    </div>
+
+    <h1 class="titulo-modulo mb-4">DETALLE DE COMPRA #@Id</h1>
+
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong>Atención:</strong> @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    @if (cargando)
+    {
+        <div class="sin-registros">
+            <div class="spinner-border text-primary me-2" role="status"></div>
+            Cargando detalle de la compra...
+        </div>
+    }
+    else if (compra == null)
+    {
+        <div class="sin-registros">
+            <i class="fa-solid fa-circle-exclamation fa-2x mb-2 d-block text-muted"></i>
+            No se encontró la compra solicitada.
+        </div>
+    }
+    else
+    {
+        <!-- 1. RESUMEN DEL COMPROBANTE -->
+        <div class="card-principal mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="subtitulo-card m-0"><i class="fa-solid fa-receipt me-2"></i>Información General</h5>
+                <span class="badge-estado @ObtenerClaseBadgeEstado(compra.Estado)">
+                    @compra.Estado
+                </span>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <span class="d-block text-muted small">Proveedor</span>
+                    <strong class="fs-6">@compra.NombreProveedor</strong>
+                </div>
+
+                <div class="col-md-3">
+                    <span class="d-block text-muted small">Fecha de Compra</span>
+                    <strong>@compra.FechaCompra.ToString("dd/MM/yyyy HH:mm")</strong>
+                </div>
+
+                <div class="col-md-2">
+                    <span class="d-block text-muted small">N° Factura</span>
+                    <strong>@(string.IsNullOrEmpty(compra.NumeroFactura) ? "-" : compra.NumeroFactura)</strong>
+                </div>
+
+                <div class="col-md-3">
+                    <span class="d-block text-muted small">N° Remito</span>
+                    <strong>@(string.IsNullOrEmpty(compra.NumeroRemito) ? "-" : compra.NumeroRemito)</strong>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(compra.Observaciones))
+                {
+                    <div class="col-12">
+                        <span class="d-block text-muted small">Observaciones</span>
+                        <span>@compra.Observaciones</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- 2. DETALLE DE PRODUCTOS -->
+        <div class="card-principal mb-4">
+            <h5 class="subtitulo-card mb-3"><i class="fa-solid fa-list me-2"></i>Productos Comprados</h5>
+
+            @if (!compra.Productos.Any())
+            {
+                <div class="sin-registros py-3">
+                    No hay productos registrados en el detalle.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="tabla-modulo">
+                        <thead>
+                            <tr>
+                                <th>ID Prod</th>
+                                <th>Producto</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-end">Costo Unit.</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in compra.Productos)
+                            {
+                                <tr>
+                                    <td>@p.IdProducto</td>
+                                    <td class="col-nombre">@p.NombreProducto</td>
+                                    <td class="text-center">@p.Cantidad</td>
+                                    <td class="text-end">$ @p.CostoUnitario.ToString("N2")</td>
+                                    <td class="text-end fw-bold">$ @p.Subtotal.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- 3. ESTADO FINANCIERO -->
+        <div class="card-principal mb-4">
+            <div class="row g-3 text-center">
+                <div class="col-md-4">
+                    <span class="d-block text-muted small">Monto Total</span>
+                    <h4 class="mb-0 text-dark fw-bold">$ @compra.TotalCompra.ToString("N2")</h4>
+                </div>
+
+                <div class="col-md-4">
+                    <span class="d-block text-muted small">Monto Pagado</span>
+                    <h4 class="mb-0 text-success fw-bold">$ @compra.TotalPagado.ToString("N2")</h4>
+                </div>
+
+                <div class="col-md-4">
+                    <span class="d-block text-muted small">Saldo Pendiente</span>
+                    <h4 class="mb-0 @(compra.SaldoPendiente > 0 ? "text-danger" : "text-muted") fw-bold">
+                        $ @compra.SaldoPendiente.ToString("N2")
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTONERA DE ACCIÓN -->
+        <div class="d-flex justify-content-end gap-2">
+            @if (compra.SaldoPendiente > 0)
+            {
+                <button class="btn-principal" @onclick='() => Navigation.NavigateTo($"/compras/pago/{compra.IdCompra}")'>
+                    <i class="fa-solid fa-money-bill-wave me-1"></i> Registrar Pago
+                </button>
+            }
+        </div>
+    }
+
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private CompraDetalleCompletoDto? compra;
+    private bool cargando = true;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDetalle();
+    }
+
+    private async Task CargarDetalle()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            compra = await CompraService.ObtenerCompraPorId(Id);
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar la compra: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private string ObtenerClaseBadgeEstado(string estado) => estado.ToUpper() switch
+    {
+        "PAGADO" => "estado-aldia",
+        "PENDIENTE" => "estado-condeuda",
+        "PARCIAL" => "estado-parcial",
+        _ => ""
+    };
+}
