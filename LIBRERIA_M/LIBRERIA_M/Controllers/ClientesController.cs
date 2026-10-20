@@ -20,9 +20,7 @@ namespace LIBRERIA_M.Controllers
         // 1. LISTADOS Y FILTROS
         // ==========================================
 
-        
         /// Obtiene todos los clientes activos.
-        
         [HttpGet]
         public async Task<IActionResult> Listar()
         {
@@ -30,9 +28,7 @@ namespace LIBRERIA_M.Controllers
             return Ok(clientes);
         }
 
-        
         /// Obtiene los clientes que no poseen deudas.
-        
         [HttpGet("al-dia")]
         public async Task<IActionResult> ListarAlDia()
         {
@@ -40,9 +36,7 @@ namespace LIBRERIA_M.Controllers
             return Ok(clientes);
         }
 
-        
         /// Obtiene los clientes con deudas pendientes.
-        
         [HttpGet("con-deuda")]
         public async Task<IActionResult> ListarConDeuda()
         {
@@ -50,9 +44,7 @@ namespace LIBRERIA_M.Controllers
             return Ok(clientes);
         }
 
-        
         /// Búsqueda dinámica de clientes por Nombre, Apellido, DNI o Teléfono.
-        
         [HttpGet("buscar")]
         public async Task<IActionResult> Buscar([FromQuery] string? texto)
         {
@@ -60,9 +52,7 @@ namespace LIBRERIA_M.Controllers
             return Ok(clientes);
         }
 
-        
         /// Obtiene un cliente por su ID.
-        
         [HttpGet("{id:int}")]
         public async Task<IActionResult> ObtenerPorId(int id)
         {
@@ -78,9 +68,7 @@ namespace LIBRERIA_M.Controllers
         // 2. ESCRITURA Y ESTADO 
         // ==========================================
 
-        
         /// Registra un nuevo cliente.
-        
         [HttpPost]
         public async Task<IActionResult> Crear([FromBody] ClienteDto cliente)
         {
@@ -95,9 +83,7 @@ namespace LIBRERIA_M.Controllers
             }
         }
 
-        
         /// Actualiza los datos de un cliente existente.
-        
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Actualizar(int id, [FromBody] ClienteDto cliente)
         {
@@ -117,9 +103,7 @@ namespace LIBRERIA_M.Controllers
             }
         }
 
-        
         /// Desactiva (borrado lógico) a un cliente.
-        
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Desactivar(int id)
         {
@@ -134,9 +118,7 @@ namespace LIBRERIA_M.Controllers
             }
         }
 
-        
         /// Reactiva a un cliente previamente desactivado.
-        
         [HttpPatch("{id:int}/reactivar")]
         public async Task<IActionResult> Reactivar(int id)
         {
@@ -155,9 +137,7 @@ namespace LIBRERIA_M.Controllers
         // 3. RESUMEN E HISTORIALES
         // ==========================================
 
-        
         /// Obtiene el resumen financiero acumulado del cliente (Cards superiores).
-       
         [HttpGet("{id:int}/resumen")]
         public async Task<IActionResult> ObtenerResumen(int id)
         {
@@ -169,9 +149,7 @@ namespace LIBRERIA_M.Controllers
             return Ok(resumen);
         }
 
-       
         /// Obtiene el historial de compras/ventas asociadas al cliente.
-        
         [HttpGet("{id:int}/compras")]
         public async Task<IActionResult> ObtenerHistorialCompras(int id)
         {
@@ -179,14 +157,36 @@ namespace LIBRERIA_M.Controllers
             return Ok(compras);
         }
 
-        
         /// Obtiene el historial de abonos y pagos realizados por el cliente.
-        
         [HttpGet("{id:int}/pagos")]
         public async Task<IActionResult> ObtenerHistorialPagos(int id)
         {
             var pagos = await _clienteRepository.ObtenerHistorialPagosAsync(id);
             return Ok(pagos);
+        }
+
+        /// Registra un abono/pago directo a una factura o global FIFO.
+        [HttpPost("{id:int}/pagos")]
+        public async Task<IActionResult> RegistrarPago(int id, [FromBody] RegistrarPagoClienteDto pagoDto)
+        {
+            if (id != pagoDto.IdCliente)
+            {
+                return BadRequest(new { mensaje = "El ID del cliente no coincide con el cuerpo del pago." });
+            }
+
+            try
+            {
+                var (exito, mensaje) = await _clienteRepository.RegistrarPagoAsync(pagoDto);
+                if (exito)
+                {
+                    return Ok(new { mensaje });
+                }
+                return BadRequest(new { mensaje });
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { mensaje = ex.Message });
+            }
         }
     }
 }

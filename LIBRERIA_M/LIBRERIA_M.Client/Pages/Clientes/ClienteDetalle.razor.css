@@ -1,5 +1,14 @@
 ﻿/* =======================================================
-   ESTILOS GENERALES Y BOTONES SUPERIORES
+   1. ESTRUCTURA Y CONTENEDOR PRINCIPAL
+======================================================= */
+.page-container {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* =======================================================
+   2. BOTONES SUPERIORES Y ACCIONES
 ======================================================= */
 .btn-secundario {
     display: inline-flex;
@@ -11,7 +20,7 @@
     color: #ffffff;
     border: none;
     border-radius: 30px;
-    font-size: 15px;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
@@ -31,21 +40,27 @@
     }
 
 .btn-editar-top {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     background-color: #39D5E8;
-    color: white;
+    color: #ffffff;
     border: none;
     border-radius: 20px;
     padding: 8px 22px;
-    font-weight: bold;
-    font-size: 14px;
+    font-weight: 700;
+    font-size: 0.875rem;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition: all 0.2s ease;
     box-shadow: 0 2px 6px rgba(57, 213, 232, 0.3);
 }
 
     .btn-editar-top:hover {
         background-color: #27bfd2;
+        color: #ffffff;
         transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(57, 213, 232, 0.4);
     }
 
     .btn-editar-top:active {
@@ -53,15 +68,23 @@
     }
 
 /* =======================================================
-   TARJETAS SUPERIORES (INFORMACIÓN Y RESUMEN FINANCIERO)
+   3. TARJETAS (INFORMACIÓN GENERAL Y RESUMEN FINANCIERO)
 ======================================================= */
 .card {
     background-color: #ffffff;
     border-radius: 12px;
     border: 1px solid #eef2f5;
+    transition: box-shadow 0.2s ease;
 }
 
-/* Tipografía de la información personal */
+.card-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #f0f3f6;
+    border-top-left-radius: 12px !important;
+    border-top-right-radius: 12px !important;
+}
+
+/* Información Personal / Detalles */
 .lh-lg strong {
     color: #2c3e50;
     font-size: 0.9rem;
@@ -69,10 +92,18 @@
 
 .lh-lg div {
     font-size: 0.9rem;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    color: #4a5568;
 }
 
 /* Círculos con íconos financieros ($) */
+.rounded-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
 .bg-success {
     background-color: #2ecc71 !important;
 }
@@ -82,105 +113,256 @@
 }
 
 /* Badges de Estado Contable */
-.badge.bg-danger {
-    background-color: #ff4757 !important;
+.badge {
+    padding: 0.45em 0.85em;
+    font-size: 0.75rem;
+    letter-spacing: 0.3px;
     border-radius: 20px;
     font-weight: 600;
 }
 
-.badge.bg-success {
-    background-color: #2ed573 !important;
-    border-radius: 20px;
-    font-weight: 600;
-}
+    .badge.bg-danger {
+        background-color: #ff4757 !important;
+        color: #ffffff;
+    }
+
+    .badge.bg-success {
+        background-color: #2ed573 !important;
+        color: #ffffff;
+    }
 
 /* =======================================================
-   PESTAÑAS / TABS DE NAVEGACIÓN INTERNA
+   4. PESTAÑAS DE NAVEGACIÓN INTERNA (HISTORIAL)
 ======================================================= */
 .nav-tabs {
     border-bottom: 2px solid #e9ecef;
+    gap: 4px;
 }
 
     .nav-tabs .nav-link {
-        color: #2c3e50;
+        color: #5a6a85;
         border: none;
         border-bottom: 3px solid transparent;
-        padding: 10px 16px;
-        font-size: 0.85rem;
-        transition: all 0.2s ease;
+        padding: 10px 18px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        background-color: transparent;
+        transition: all 0.2s ease-in-out;
     }
 
         .nav-tabs .nav-link:hover {
             border-color: transparent;
             color: #00c2ff;
+            background-color: #f8fafc;
+            border-radius: 6px 6px 0 0;
         }
 
         .nav-tabs .nav-link.active {
             color: #00c2ff;
             background-color: transparent;
             border-bottom: 3px solid #00c2ff;
+            font-weight: 700;
         }
 
 /* =======================================================
-   TABLAS Y REGISTROS
+   5. TABLAS DE REGISTROS (COMPRAS, PAGOS, PEDIDOS)
 ======================================================= */
-.table thead tr {
-    border-bottom: 2px solid #e9ecef;
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
-.table th {
-    font-size: 0.8rem;
-    color: #7f8c8d;
-    font-weight: 700;
-    text-transform: uppercase;
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    vertical-align: middle;
 }
 
-.table td {
+    .table thead tr {
+        border-bottom: 2px solid #e9ecef;
+        background-color: #f8fafc;
+    }
+
+    .table th {
+        font-size: 0.78rem;
+        color: #7f8c8d;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px 16px;
+        border-top: none;
+        white-space: nowrap;
+    }
+
+    .table td {
+        font-size: 0.875rem;
+        color: #2d3748;
+        padding: 12px 16px;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+.table-hover tbody tr:hover {
+    background-color: #f7fafc;
+}
+
+.empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: #a0aec0;
     font-size: 0.9rem;
-    color: #333;
 }
 
 /* =======================================================
-   PANEL LATERAL: REGISTRAR PAGO
+   6. PAGINACIÓN DE TABLAS
 ======================================================= */
-.input-group-text {
-    background-color: #f8f9fa;
-    border-color: #ced4da;
-    color: #6c757d;
+.pie-tabla {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
+.info-registros {
+    font-size: 0.825rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.paginacion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-pagina {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    color: #475569;
+    font-size: 0.825rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+    .btn-pagina:hover:not(:disabled) {
+        background-color: #f1f5f9;
+        border-color: #94a3b8;
+        color: #1e293b;
+    }
+
+    .btn-pagina.activa {
+        background-color: #2F54EB;
+        border-color: #2F54EB;
+        color: #ffffff;
+        box-shadow: 0 2px 4px rgba(47, 84, 235, 0.25);
+    }
+
+    .btn-pagina:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+    }
+
+/* =======================================================
+   7. FORMULARIOS Y PANEL DE REGISTRO DE PAGOS / COMPRAS
+======================================================= */
+.form-control,
+.form-select {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    color: #334155;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #00c2ff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 194, 255, 0.2);
+        outline: 0;
+    }
+
+.input-group {
+    display: flex;
+    align-items: center;
+}
+
+.input-group-text {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    color: #64748b;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+}
+
+.input-group .form-control {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* Botones del Formulario / Panel */
 .btn-info {
     background-color: #00c2ff !important;
     border-color: #00c2ff !important;
+    color: #ffffff !important;
     border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 8px 18px;
+    transition: all 0.2s ease;
 }
 
     .btn-info:hover {
         background-color: #00a8df !important;
         border-color: #00a8df !important;
+        box-shadow: 0 2px 8px rgba(0, 194, 255, 0.3);
     }
 
 .btn-light {
     border-radius: 20px;
-    background-color: #e0e0e0;
-    color: #333;
+    background-color: #e2e8f0;
+    color: #334155;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: none;
+    padding: 8px 18px;
+    transition: all 0.2s ease;
 }
 
     .btn-light:hover {
-        background-color: #d4d4d4;
+        background-color: #cbd5e1;
+        color: #1e293b;
     }
 
 .btn-outline-danger {
     border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    transition: all 0.2s ease;
 }
 
-/* Formulario de inputs */
-.form-control, .form-select {
-    border-radius: 8px;
-    font-size: 0.9rem;
+/* =======================================================
+   8. MENSAJES Y VALIDACIONES
+======================================================= */
+.validation-message {
+    font-size: 0.8rem;
+    color: #e53e3e;
+    margin-top: 4px;
+    font-weight: 500;
 }
-
-    .form-control:focus, .form-select:focus {
-        border-color: #00c2ff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 194, 255, 0.25);
-    }

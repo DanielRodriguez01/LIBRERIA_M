@@ -1,0 +1,431 @@
+﻿@page "/panel-control"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using LIBRERIA_M.Client.Models.Panel_de_Control
+@using LIBRERIA_M.Client.Services
+@inject PanelControlService PanelService
+@inject NavigationManager Navigation
+
+<PageTitle>Panel de Control - LIBRERIA M</PageTitle>
+
+<div class="page-container">
+
+    <!-- CABECERA SUPERIOR -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1 text-dark">BIENVENIDO ADMINISTRADOR</h4>
+            <p class="text-muted small mb-0">Resumen general de las operaciones de la librería</p>
+        </div>
+        <div class="badge bg-primary fs-6 px-3 py-2 shadow-sm">
+            <i class="fa-solid fa-calendar-days me-2"></i> @DateTime.Now.ToString("dd 'de' MMMM 'de' yyyy")
+        </div>
+    </div>
+
+    @if (cargando)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Cargando panel de control...</p>
+        </div>
+    }
+    else
+    {
+        <!-- SECCIÓN 1: TARJETAS MÉTRICAS SUPERIORES -->
+        <div class="row g-3 mb-4">
+            <!-- Tarjeta 1: Ventas del Mes -->
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm p-3 h-100 metric-card">
+                    <div class="text-muted small fw-bold mb-1">VENTAS DEL MES</div>
+                    <h3 class="fw-bold text-dark mb-2">$ @resumen.VentasMes.ToString("N2")</h3>
+                    <div class="text-success small fw-bold">
+                        <i class="fa-solid fa-arrow-trend-up me-1"></i> +16% <span class="text-muted fw-normal">vs mes anterior</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjeta 2: Ventas Realizadas -->
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm p-3 h-100 metric-card">
+                    <div class="text-muted small fw-bold mb-1">VENTAS REALIZADAS</div>
+                    <h3 class="fw-bold text-dark mb-2">@resumen.CantidadVentas</h3>
+                    <div class="text-success small fw-bold">
+                        <i class="fa-solid fa-arrow-trend-up me-1"></i> +8% <span class="text-muted fw-normal">operaciones</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjeta 3: Deudas Pendientes -->
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm p-3 h-100 metric-card">
+                    <div class="text-danger small fw-bold mb-1">DEUDAS PENDIENTES</div>
+                    <h3 class="fw-bold text-danger mb-2">$ @resumen.DeudasPendientes.ToString("N2")</h3>
+                    <div class="text-muted small">
+                        <span>Cuentas por cobrar</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjeta 4: Clientes Activos -->
+            <div class="col-md-3 col-sm-6">
+                <div class="card border-0 shadow-sm p-3 h-100 metric-card">
+                    <div class="text-muted small fw-bold mb-1">CLIENTES ACTIVOS</div>
+                    <h3 class="fw-bold text-dark mb-2">@resumen.ClientesActivos</h3>
+                    <div class="text-success small fw-bold">
+                        <i class="fa-solid fa-arrow-trend-up me-1"></i> +6% <span class="text-muted fw-normal">registrados</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2: TABLA VENTAS POR DÍA Y PRODUCTOS MÁS VENDIDOS -->
+        <div class="row g-3 mb-4">
+
+            <!-- Ventas por Día -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-secondary mb-0">VENTAS POR DÍA</h6>
+                        <span class="badge bg-light text-dark border">Últimos días</span>
+                    </div>
+
+                    @if (!ventasPorDia.Any())
+                    {
+                        <div class="text-center text-muted py-4 small">No hay registros de ventas recientes.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr class="table-light">
+                                        <th class="small fw-bold">DÍA</th>
+                                        <th class="small fw-bold">FECHA</th>
+                                        <th class="small fw-bold text-center">Nº DE VENTAS</th>
+                                        <th class="small fw-bold text-end">TOTAL VENDIDO</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var v in VentasPorDiaPaginadas)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold">@v.Fecha.ToString("dddd").ToUpper()</td>
+                                            <td>@v.Fecha.ToString("dd/MM/yyyy")</td>
+                                            <td class="text-center fw-bold">@v.CantidadVentas</td>
+                                            <td class="text-end text-success fw-bold">$ @v.TotalVendido.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Paginación Ventas por Día (7 registros por página) -->
+                        @if (TotalPaginasVentas > 1)
+                        {
+                            <div class="paginacion mt-3">
+                                <button class="btn-pagina flecha" title="Página anterior" @onclick="() => CambiarPaginaVentas(paginaVentasActual - 1)" disabled="@(paginaVentasActual == 1)">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+
+                                @if (DebeMostrarPrimeraPaginaVentas)
+                                {
+                                    <button class="@ObtenerClasePaginaVentas(1)" @onclick="() => CambiarPaginaVentas(1)">1</button>
+                                }
+
+                                @if (DebeMostrarPuntosInicialesVentas)
+                                {
+                                    <span class="puntos-paginacion">...</span>
+                                }
+
+                                @foreach (var pagina in PaginasVisiblesVentas)
+                                {
+                                    <button class="@ObtenerClasePaginaVentas(pagina)" @onclick="() => CambiarPaginaVentas(pagina)">@pagina</button>
+                                }
+
+                                @if (DebeMostrarPuntosFinalesVentas)
+                                {
+                                    <span class="puntos-paginacion">...</span>
+                                }
+
+                                @if (DebeMostrarUltimaPaginaVentas)
+                                {
+                                    <button class="@ObtenerClasePaginaVentas(TotalPaginasVentas)" @onclick="() => CambiarPaginaVentas(TotalPaginasVentas)">@TotalPaginasVentas</button>
+                                }
+
+                                <button class="btn-pagina flecha" title="Página siguiente" @onclick="() => CambiarPaginaVentas(paginaVentasActual + 1)" disabled="@(paginaVentasActual == TotalPaginasVentas)">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <!-- Productos Más Vendidos -->
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-secondary mb-0">PRODUCTOS MÁS VENDIDOS</h6>
+                        <span class="badge bg-light text-dark border">Top Ranking</span>
+                    </div>
+
+                    @if (!productosMasVendidos.Any())
+                    {
+                        <div class="text-center text-muted py-4 small">No hay datos de productos vendidos.</div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-2">
+                            @{
+                                int rank = 1;
+                            }
+                            @foreach (var p in productosMasVendidos)
+                            {
+                                <div class="d-flex align-items-center justify-content-between px-2 py-1 rounded bg-light">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white fw-bold me-2 d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 13px;">
+                                            @rank
+                                        </div>
+                                        <span class="fw-bold text-dark small">@p.Producto</span>
+                                    </div>
+                                    <span class="fw-bold text-secondary small">@p.CantidadVendida</span>
+                                </div>
+                                rank++;
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SECCIÓN 3: PEDIDOS PENDIENTES -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-secondary mb-0">PEDIDOS PENDIENTES</h6>
+                        <a href="/pedidos" class="small text-decoration-none fw-bold text-primary">Ver todos los pedidos</a>
+                    </div>
+
+                    @if (!pedidosPendientes.Any())
+                    {
+                        <div class="text-center text-muted py-4 small">
+                            <i class="fa-solid fa-circle-check text-success fa-2x mb-2 d-block"></i>
+                            No hay pedidos pendientes en este momento.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr class="table-light">
+                                        <th class="small fw-bold">Nº PEDIDO</th>
+                                        <th class="small fw-bold">CLIENTE</th>
+                                        <th class="small fw-bold">FECHA</th>
+                                        <th class="small fw-bold">ORIGEN</th>
+                                        <th class="small fw-bold text-end">TOTAL</th>
+                                        <th class="small fw-bold text-center">ESTADO</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ped in PedidosPendientesPaginados)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-primary">@ped.NumeroPedido</td>
+                                            <td>@ped.Cliente</td>
+                                            <td>@ped.FechaPedido.ToString("dd/MM/yyyy")</td>
+                                            <td>
+                                                <span class="badge bg-secondary text-white">@ped.OrigenPedido</span>
+                                            </td>
+                                            <td class="text-end fw-bold">$ @ped.Total.ToString("N2")</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-warning text-dark px-3 py-2 fw-bold">@ped.Estado.ToUpper()</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Paginación Pedidos Pendientes (5 registros por página) -->
+                        @if (TotalPaginasPedidos > 1)
+                        {
+                            <div class="paginacion mt-3">
+                                <button class="btn-pagina flecha" title="Página anterior" @onclick="() => CambiarPaginaPedidos(paginaPedidosActual - 1)" disabled="@(paginaPedidosActual == 1)">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+
+                                @if (DebeMostrarPrimeraPaginaPedidos)
+                                {
+                                    <button class="@ObtenerClasePaginaPedidos(1)" @onclick="() => CambiarPaginaPedidos(1)">1</button>
+                                }
+
+                                @if (DebeMostrarPuntosInicialesPedidos)
+                                {
+                                    <span class="puntos-paginacion">...</span>
+                                }
+
+                                @foreach (var pagina in PaginasVisiblesPedidos)
+                                {
+                                    <button class="@ObtenerClasePaginaPedidos(pagina)" @onclick="() => CambiarPaginaPedidos(pagina)">@pagina</button>
+                                }
+
+                                @if (DebeMostrarPuntosFinalesPedidos)
+                                {
+                                    <span class="puntos-paginacion">...</span>
+                                }
+
+                                @if (DebeMostrarUltimaPaginaPedidos)
+                                {
+                                    <button class="@ObtenerClasePaginaPedidos(TotalPaginasPedidos)" @onclick="() => CambiarPaginaPedidos(TotalPaginasPedidos)">@TotalPaginasPedidos</button>
+                                }
+
+                                <button class="btn-pagina flecha" title="Página siguiente" @onclick="() => CambiarPaginaPedidos(paginaPedidosActual + 1)" disabled="@(paginaPedidosActual == TotalPaginasPedidos)">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+@code {
+    private bool cargando = true;
+    private PanelControlResumenDto resumen = new();
+    private List<VentaPorDiaDto> ventasPorDia = new();
+    private List<ProductoMasVendidoDto> productosMasVendidos = new();
+    private List<PedidoPendientePanelDto> pedidosPendientes = new();
+
+    // Paginación Ventas por Día (7 filas por semana)
+    private int paginaVentasActual = 1;
+    private const int registrosPorPaginaVentas = 7;
+
+    // Paginación Pedidos Pendientes (5 filas)
+    private int paginaPedidosActual = 1;
+    private const int registrosPorPaginaPedidos = 5;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            cargando = true;
+
+            var tareaResumen = PanelService.ObtenerResumen();
+            var tareaVentas = PanelService.ObtenerVentasPorDia();
+            var tareaProductos = PanelService.ObtenerProductosMasVendidos(7); // Ajustado a 7 para llenar el espacio vacío alineado con la tarjeta de la izquierda
+            var tareaPedidos = PanelService.ObtenerPedidosPendientes(10);
+
+            await Task.WhenAll(tareaResumen, tareaVentas, tareaProductos, tareaPedidos);
+
+            resumen = await tareaResumen;
+            ventasPorDia = await tareaVentas;
+            productosMasVendidos = await tareaProductos;
+            pedidosPendientes = await tareaPedidos;
+
+            AjustarPaginas();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar el panel de control: {ex.Message}");
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    // --- LÓGICA PAGINACIÓN VENTAS POR DÍA ---
+    private IEnumerable<VentaPorDiaDto> VentasPorDiaPaginadas =>
+        ventasPorDia
+            .Skip((paginaVentasActual - 1) * registrosPorPaginaVentas)
+            .Take(registrosPorPaginaVentas);
+
+    private int TotalPaginasVentas
+    {
+        get
+        {
+            var total = ventasPorDia.Count;
+            return total == 0 ? 1 : (int)Math.Ceiling(total / (double)registrosPorPaginaVentas);
+        }
+    }
+
+    private void CambiarPaginaVentas(int pagina)
+    {
+        if (pagina < 1 || pagina > TotalPaginasVentas) return;
+        paginaVentasActual = pagina;
+    }
+
+    private IEnumerable<int> PaginasVisiblesVentas
+    {
+        get
+        {
+            if (TotalPaginasVentas <= 5) return Enumerable.Range(1, TotalPaginasVentas);
+            var inicio = Math.Max(2, paginaVentasActual - 1);
+            var fin = Math.Min(TotalPaginasVentas - 1, paginaVentasActual + 1);
+            if (paginaVentasActual <= 2) { inicio = 2; fin = 4; }
+            if (paginaVentasActual >= TotalPaginasVentas - 1) { inicio = TotalPaginasVentas - 3; fin = TotalPaginasVentas - 1; }
+            return Enumerable.Range(inicio, fin - inicio + 1);
+        }
+    }
+
+    private bool DebeMostrarPrimeraPaginaVentas => TotalPaginasVentas > 5 && !PaginasVisiblesVentas.Contains(1);
+    private bool DebeMostrarUltimaPaginaVentas => TotalPaginasVentas > 5 && !PaginasVisiblesVentas.Contains(TotalPaginasVentas);
+    private bool DebeMostrarPuntosInicialesVentas => TotalPaginasVentas > 5 && PaginasVisiblesVentas.FirstOrDefault() > 2;
+    private bool DebeMostrarPuntosFinalesVentas => TotalPaginasVentas > 5 && PaginasVisiblesVentas.LastOrDefault() < TotalPaginasVentas - 1;
+    private string ObtenerClasePaginaVentas(int pagina) => paginaVentasActual == pagina ? "btn-pagina activa" : "btn-pagina";
+
+
+    // --- LÓGICA PAGINACIÓN PEDIDOS PENDIENTES ---
+    private IEnumerable<PedidoPendientePanelDto> PedidosPendientesPaginados =>
+        pedidosPendientes
+            .Skip((paginaPedidosActual - 1) * registrosPorPaginaPedidos)
+            .Take(registrosPorPaginaPedidos);
+
+    private int TotalPaginasPedidos
+    {
+        get
+        {
+            var total = pedidosPendientes.Count;
+            return total == 0 ? 1 : (int)Math.Ceiling(total / (double)registrosPorPaginaPedidos);
+        }
+    }
+
+    private void CambiarPaginaPedidos(int pagina)
+    {
+        if (pagina < 1 || pagina > TotalPaginasPedidos) return;
+        paginaPedidosActual = pagina;
+    }
+
+    private IEnumerable<int> PaginasVisiblesPedidos
+    {
+        get
+        {
+            if (TotalPaginasPedidos <= 5) return Enumerable.Range(1, TotalPaginasPedidos);
+            var inicio = Math.Max(2, paginaPedidosActual - 1);
+            var fin = Math.Min(TotalPaginasPedidos - 1, paginaPedidosActual + 1);
+            if (paginaPedidosActual <= 2) { inicio = 2; fin = 4; }
+            if (paginaPedidosActual >= TotalPaginasPedidos - 1) { inicio = TotalPaginasPedidos - 3; fin = TotalPaginasPedidos - 1; }
+            return Enumerable.Range(inicio, fin - inicio + 1);
+        }
+    }
+
+    private bool DebeMostrarPrimeraPaginaPedidos => TotalPaginasPedidos > 5 && !PaginasVisiblesPedidos.Contains(1);
+    private bool DebeMostrarUltimaPaginaPedidos => TotalPaginasPedidos > 5 && !PaginasVisiblesPedidos.Contains(TotalPaginasPedidos);
+    private bool DebeMostrarPuntosInicialesPedidos => TotalPaginasPedidos > 5 && PaginasVisiblesPedidos.FirstOrDefault() > 2;
+    private bool DebeMostrarPuntosFinalesPedidos => TotalPaginasPedidos > 5 && PaginasVisiblesPedidos.LastOrDefault() < TotalPaginasPedidos - 1;
+    private string ObtenerClasePaginaPedidos(int pagina) => paginaPedidosActual == pagina ? "btn-pagina activa" : "btn-pagina";
+
+    private void AjustarPaginas()
+    {
+        if (paginaVentasActual > TotalPaginasVentas) paginaVentasActual = TotalPaginasVentas;
+        if (paginaVentasActual < 1) paginaVentasActual = 1;
+
+        if (paginaPedidosActual > TotalPaginasPedidos) paginaPedidosActual = TotalPaginasPedidos;
+        if (paginaPedidosActual < 1) paginaPedidosActual = 1;
+    }
+}

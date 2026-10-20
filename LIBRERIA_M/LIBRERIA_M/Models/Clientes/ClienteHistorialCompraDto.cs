@@ -6,9 +6,9 @@
         public string NumeroFactura { get; set; } = string.Empty;
         public DateTime FechaVenta { get; set; }
         public decimal TotalVenta { get; set; }
-        public decimal MontoPagado { get; set; }
+        public decimal TotalPagado { get; set; }
         public decimal SaldoPendiente { get; set; }
-        public bool Estado { get; set; }
-
+        public string Estado { get; set; } = string.Empty; // 'PAGADO', 'PENDIENTE', 'PARCIAL'
+        public string? Observaciones { get; set; }
     }
 }

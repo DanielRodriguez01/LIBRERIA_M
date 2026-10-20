@@ -1,0 +1,394 @@
+﻿@page "/pedidos"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using global::LIBRERIA_M.Client.Services
+@using System.Globalization
+
+@inject PedidoService PedidoService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Pedidos - Librería</PageTitle>
+
+<div class="page-container">
+
+    <h2 class="titulo-modulo">
+        PEDIDOS (LISTADO)
+    </h2>
+
+    <div class="card-principal">
+
+        <div class="card-secundaria">
+
+            <!-- ========================= -->
+            <!-- Barra Superior -->
+            <!-- ========================= -->
+            <div class="toolbar">
+
+                <input class="input-busqueda"
+                       type="text"
+                       placeholder="🔍 Buscar por Nºde Pedido,Cliente u Origen..."
+                       @bind="textoBusqueda"
+                       @bind:after="ReiniciarPaginaBusqueda"
+                       @bind:event="oninput" />
+
+                <button class="btn-principal"
+                        @onclick="NuevoPedido">
+                    + NUEVO PEDIDO
+                </button>
+
+            </div>
+
+            <!-- ========================= -->
+            <!-- Filtros por Estado -->
+            <!-- ========================= -->
+            <div class="filtros">
+
+                <span class="titulo-filtro">
+                    FILTRAR POR ESTADO:
+                </span>
+
+                <div class="grupo-filtros">
+
+                    <button class="@ObtenerClaseFiltro("Todos")"
+                            @onclick='() => CambiarFiltroEstado("Todos")'>
+                        TODOS
+                    </button>
+
+                    <button class="@ObtenerClaseFiltro("PENDIENTE")"
+                            @onclick='() => CambiarFiltroEstado("PENDIENTE")'>
+                        PENDIENTE
+                    </button>
+
+                    <button class="@ObtenerClaseFiltro("TERMINADO")"
+                            @onclick='() => CambiarFiltroEstado("TERMINADO")'>
+                        TERMINADO
+                    </button>
+
+                    <button class="@ObtenerClaseFiltro("ENTREGADO")"
+                            @onclick='() => CambiarFiltroEstado("ENTREGADO")'>
+                        ENTREGADO
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- ========================= -->
+            <!-- Tabla de Pedidos -->
+            <!-- ========================= -->
+            <div class="tabla-container">
+
+                <table class="tabla-stock">
+
+                    <thead>
+                        <tr>
+                            <th>N°PEDIDO</th>
+                            <th>CLIENTE</th>
+                            <th>DNI</th>
+                            <th class="text-center">ORIGEN</th>
+                            <th class="text-center">FECHA</th>
+                            <th class="text-center">ESTADO</th>
+                            <th class="text-right">TOTAL</th>
+                            <th class="text-center">ACCIONES</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (cargando)
+                        {
+                            <tr>
+                                <td colspan="8" class="sin-registros">
+                                    Cargando pedidos...
+                                </td>
+                            </tr>
+                        }
+                        else if (PedidosFiltrados.Any())
+                        {
+                            @foreach (var p in PedidosFiltrados)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@p.NumeroPedido</strong>
+                                    </td>
+
+                                    <td>
+                                        @p.ClienteNombre
+                                    </td>
+
+                                    <td>
+                                        @(string.IsNullOrWhiteSpace(p.DniCliente) ? "-" : p.DniCliente)
+                                    </td>
+
+                                    <td class="text-center">
+                                        @(string.IsNullOrWhiteSpace(p.Origen) ? "-" : p.Origen.ToUpper())
+                                    </td>
+
+                                    <td class="text-center">
+                                        @p.FechaPedido.ToString("dd/MM/yyyy")
+                                    </td>
+
+                                    <td class="text-center">
+                                        <span class="@ObtenerClaseBadgeEstado(p.Estado)">
+                                            @(string.IsNullOrWhiteSpace(p.Estado) ? "Sin estado" : p.Estado.ToUpper())
+                                        </span>
+                                    </td>
+
+                                    <td class="text-right">
+                                        @p.Total.ToString("C", formatoMoneda)
+                                    </td>
+
+                                    <td class="text-center">
+                                        <div class="acciones-cell">
+                                            <button class="btn-editar"
+                                                    title="Editar Pedido"
+                                                    @onclick="() => VerDetalle(p.IdPedido)">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="sin-registros">
+                                    No se encontraron registros de pedidos.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <!-- ========================= -->
+            <!-- Paginación -->
+            <!-- ========================= -->
+            @if (TotalPaginas > 1)
+            {
+                <div class="paginacion">
+
+                    <button class="btn-pagina flecha"
+                            title="Página anterior"
+                            @onclick="() => CambiarPagina(paginaActual - 1)"
+                            disabled="@(paginaActual == 1)">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+
+                    @if (DebeMostrarPrimeraPagina)
+                    {
+                        <button class="@ObtenerClasePagina(1)"
+                                @onclick="() => CambiarPagina(1)">
+                            1
+                        </button>
+                    }
+
+                    @if (DebeMostrarPuntosIniciales)
+                    {
+                        <span class="puntos-paginacion">...</span>
+                    }
+
+                    @foreach (var pagina in PaginasVisibles)
+                    {
+                        <button class="@ObtenerClasePagina(pagina)"
+                                @onclick="() => CambiarPagina(pagina)">
+                            @pagina
+                        </button>
+                    }
+
+                    @if (DebeMostrarPuntosFinales)
+                    {
+                        <span class="puntos-paginacion">...</span>
+                    }
+
+                    @if (DebeMostrarUltimaPagina)
+                    {
+                        <button class="@ObtenerClasePagina(TotalPaginas)"
+                                @onclick="() => CambiarPagina(TotalPaginas)">
+                            @TotalPaginas
+                        </button>
+                    }
+
+                    <button class="btn-pagina flecha"
+                            title="Página siguiente"
+                            @onclick="() => CambiarPagina(paginaActual + 1)"
+                            disabled="@(paginaActual == TotalPaginas)">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+
+                </div>
+            }
+
+            <!-- ========================= -->
+            <!-- Banner Explicativo: Flujo de Pedidos -->
+            <!-- ========================= -->
+            <div class="banner-flujo-info">
+                <div class="icon-info">
+                    <i class="fa-solid fa-circle-info"></i>
+                </div>
+                <div class="contenido-info">
+                    <strong>FLUJO DE PEDIDOS</strong>
+                    <div class="items-flujo">
+                        <p><span class="badge-inline badge-pendiente">PENDIENTE:</span> PEDIDO CREADO, AÚN NO SE HA COMENZADO.</p>
+                        <p><span class="badge-inline badge-terminado">TERMINADO:</span> PEDIDO PREPARADO, LISTO PARA ENTREGAR.</p>
+                        <p><span class="badge-inline badge-entregado">ENTREGADO:</span> PEDIDO ENTREGADO AL CLIENTE, CONVERTIDO EN VENTA.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@code {
+    private List<PedidoListadoDto> pedidos = new();
+    private bool cargando = true;
+    private string? textoBusqueda = "";
+    private string estadoSeleccionado = "Todos";
+    private int paginaActual = 1;
+    private const int registrosPorPagina = 5;
+
+    private readonly CultureInfo formatoMoneda = new CultureInfo("es-AR")
+    {
+        NumberFormat = new NumberFormatInfo
+        {
+            CurrencySymbol = "$",
+            CurrencyPositivePattern = 0,
+            CurrencyNegativePattern = 8,
+            CurrencyGroupSeparator = ".",
+            CurrencyDecimalSeparator = ","
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarPedidos();
+    }
+
+    private async Task CargarPedidos()
+    {
+        cargando = true;
+        try
+        {
+            var resultado = await PedidoService.ListarPedidos(null, null, null, null);
+            pedidos = resultado ?? new List<PedidoListadoDto>();
+            AjustarPaginaActual();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar pedidos: {ex.Message}");
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private IEnumerable<PedidoListadoDto> PedidosFiltradosBase =>
+        pedidos
+            .Where(p =>
+                string.IsNullOrWhiteSpace(textoBusqueda)
+                || (p.NumeroPedido?.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (p.ClienteNombre?.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (p.DniCliente?.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (p.Origen?.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase) ?? false))
+            .Where(p =>
+            {
+                if (string.IsNullOrWhiteSpace(estadoSeleccionado) || estadoSeleccionado == "Todos")
+                    return true;
+
+                return p.Estado?.Trim().ToUpper() == estadoSeleccionado.Trim().ToUpper();
+            });
+
+    private IEnumerable<PedidoListadoDto> PedidosFiltrados =>
+        PedidosFiltradosBase
+            .Skip((paginaActual - 1) * registrosPorPagina)
+            .Take(registrosPorPagina);
+
+    private int TotalPaginas
+    {
+        get
+        {
+            var totalRegistros = PedidosFiltradosBase.Count();
+            return totalRegistros == 0 ? 1 : (int)Math.Ceiling(totalRegistros / (double)registrosPorPagina);
+        }
+    }
+
+    private void CambiarPagina(int pagina)
+    {
+        if (pagina < 1 || pagina > TotalPaginas) return;
+        paginaActual = pagina;
+    }
+
+    private void CambiarFiltroEstado(string estado)
+    {
+        estadoSeleccionado = estado;
+        paginaActual = 1;
+    }
+
+    private string ObtenerClaseFiltro(string estado)
+    {
+        if (estadoSeleccionado != estado) return "btn-filtro";
+
+        return estado switch
+        {
+            "Todos" => "btn-filtro filtro-todos",
+            "PENDIENTE" => "btn-filtro filtro-sinstock",
+            "TERMINADO" => "btn-filtro filtro-stockbajo",
+            "ENTREGADO" => "btn-filtro filtro-pagado",
+            _ => "btn-filtro"
+        };
+    }
+
+    private string ObtenerClaseBadgeEstado(string estado)
+    {
+        if (string.IsNullOrEmpty(estado)) return "";
+        var est = estado.ToUpper().Trim();
+
+        return est switch
+        {
+            "PENDIENTE" => "estado-sinstock",
+            "TERMINADO" => "estado-stockbajo",
+            "ENTREGADO" => "estado-disponible",
+            "CANCELADO" => "estado-cancelado",
+            _ => ""
+        };
+    }
+
+    private void NuevoPedido() => Navigation.NavigateTo("/pedidos/nuevo");
+    private void VerDetalle(int idPedido) => Navigation.NavigateTo($"/pedidos/{idPedido}");
+    private void ReiniciarPaginaBusqueda() => paginaActual = 1;
+
+    private void AjustarPaginaActual()
+    {
+        if (paginaActual > TotalPaginas) paginaActual = TotalPaginas;
+        if (paginaActual < 1) paginaActual = 1;
+    }
+
+    private IEnumerable<int> PaginasVisibles
+    {
+        get
+        {
+            if (TotalPaginas <= 5) return Enumerable.Range(1, TotalPaginas);
+
+            var inicio = Math.Max(2, paginaActual - 1);
+            var fin = Math.Min(TotalPaginas - 1, paginaActual + 1);
+
+            if (paginaActual <= 2) { inicio = 2; fin = 4; }
+            if (paginaActual >= TotalPaginas - 1) { inicio = TotalPaginas - 3; fin = TotalPaginas - 1; }
+
+            return Enumerable.Range(inicio, fin - inicio + 1);
+        }
+    }
+
+    private bool DebeMostrarPrimeraPagina => TotalPaginas > 5 && !PaginasVisibles.Contains(1);
+    private bool DebeMostrarUltimaPagina => TotalPaginas > 5 && !PaginasVisibles.Contains(TotalPaginas);
+    private bool DebeMostrarPuntosIniciales => TotalPaginas > 5 && PaginasVisibles.FirstOrDefault() > 2;
+    private bool DebeMostrarPuntosFinales => TotalPaginas > 5 && PaginasVisibles.LastOrDefault() < TotalPaginas - 1;
+    private string ObtenerClasePagina(int pagina) => paginaActual == pagina ? "btn-pagina activa" : "btn-pagina";
+}

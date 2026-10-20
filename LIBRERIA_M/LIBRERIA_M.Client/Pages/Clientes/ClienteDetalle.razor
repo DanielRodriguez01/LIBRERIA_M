@@ -2,7 +2,7 @@
 @page "/clientes/detalle/{IdCliente:int}"
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
-@using LIBRERIA_M.Client.Models
+@using LIBRERIA_M.Client.Models.Clientes
 @using LIBRERIA_M.Client.Services
 @using Microsoft.AspNetCore.Components.Forms
 
@@ -35,13 +35,22 @@
         }
     </div>
 
-    <!-- MENSAJE DE ERROR -->
+    <!-- MENSAJE DE ERROR O ÉXITO -->
     @if (!string.IsNullOrEmpty(mensajeError))
     {
         <div class="alert alert-danger alert-dismissible fade show mb-3 shadow-sm" role="alert">
             <i class="fa-solid fa-triangle-exclamation me-2"></i>
             <strong>Atención:</strong> @mensajeError
             <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(mensajeExito))
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-3 shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            @mensajeExito
+            <button type="button" class="btn-close" @onclick="() => mensajeExito = null"></button>
         </div>
     }
 
@@ -54,9 +63,7 @@
     }
     else if (EsNuevo || modoEdicion)
     {
-        <!-- =======================================================
-             VISTA FORMULARIO: CREACIÓN O EDICIÓN COMPLETA
-        ======================================================= -->
+        <!-- VISTA FORMULARIO: CREACIÓN O EDICIÓN COMPLETA -->
         <div class="card shadow-sm border-0 p-4">
             <h4 class="fw-bold mb-4">@(EsNuevo ? "Nuevo Cliente" : "Editar Cliente")</h4>
             <EditForm Model="cliente" OnValidSubmit="GuardarCliente">
@@ -95,14 +102,14 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Tipo de Cliente</label>
-                        <InputSelect class="form-select" @bind-Value="cliente.TipoCliente">
+                        <InputSelect class="form-select" @bind-Value="cliente.TipoCliente" @bind-Value:after="OnTipoClienteChanged">
                             <option value="Normal">Normal</option>
                             <option value="Particular">Particular</option>
                         </InputSelect>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Descuento (%)</label>
-                        <InputNumber class="form-control" @bind-Value="cliente.PorcentajeDescuento" min="0" max="100" />
+                        <InputNumber class="form-control" @bind-Value="cliente.PorcentajeDescuento" min="0" max="100" disabled="@(!EsClienteParticular)" />
                     </div>
                 </div>
 
@@ -119,17 +126,14 @@
     }
     else
     {
-        <!-- =======================================================
-             VISTA DASHBOARD CLIENTE (SEGÚN MAQUETA FIGMA)
-        ======================================================= -->
-        <!-- TARJETAS SUPERIORES DE INFORMACIÓN Y RESUMEN -->
+        <!-- VISTA DASHBOARD CLIENTE -->
         <div class="row g-3 mb-4">
             <!-- TARJETA IZQUIERDA: INFORMACIÓN DEL CLIENTE -->
             <div class="col-md-6">
                 <div class="card border-0 shadow-sm h-100 p-3">
                     <h6 class="fw-bold border-bottom pb-2 mb-3 text-secondary">INFORMACIÓN DEL CLIENTE</h6>
                     <div class="lh-lg">
-                        <div><strong>NOMBRE :</strong> @cliente.Apellido.ToUpper() @cliente.Nombre.ToUpper()</div>
+                        <div><strong>NOMBRE :</strong> @cliente.Apellido?.ToUpper() @cliente.Nombre?.ToUpper()</div>
                         <div><i class="fa-solid fa-id-card me-2 text-muted"></i><strong>DNI :</strong> @cliente.DNI</div>
                         <div><i class="fa-solid fa-phone me-2 text-muted"></i><strong>TELÉFONO :</strong> @(string.IsNullOrEmpty(cliente.Telefono) ? "-" : cliente.Telefono)</div>
                         <div><i class="fa-solid fa-location-dot me-2 text-muted"></i><strong>DIRECCIÓN :</strong> @(string.IsNullOrEmpty(cliente.Direccion) ? "-" : cliente.Direccion)</div>
@@ -151,7 +155,7 @@
                             </div>
                             <span class="fw-bold text-secondary">TOTAL COMPRADO</span>
                         </div>
-                        <span class="fs-5 fw-bold text-success">$ @totalComprado.ToString("N2")</span>
+                        <span class="fs-5 fw-bold text-success">$ @resumenCliente.TotalComprado.ToString("N2")</span>
                     </div>
 
                     <div class="d-flex align-items-center justify-content-between mb-3 p-2 rounded bg-light">
@@ -161,12 +165,12 @@
                             </div>
                             <span class="fw-bold text-secondary">SALDO PENDIENTE</span>
                         </div>
-                        <span class="fs-5 fw-bold text-danger">$ @cliente.Deuda.ToString("N2")</span>
+                        <span class="fs-5 fw-bold text-danger">$ @resumenCliente.SaldoPendiente.ToString("N2")</span>
                     </div>
 
                     <div class="d-flex align-items-center justify-content-between pt-2 border-top">
                         <span class="fw-bold text-secondary">ESTADO ACTUAL:</span>
-                        @if (cliente.Deuda > 0)
+                        @if (resumenCliente.SaldoPendiente > 0 || resumenCliente.EstadoFinanciero == "CON DEUDA")
                         {
                             <span class="badge bg-danger fs-6 px-3 py-2">CON DEUDA</span>
                         }
@@ -179,14 +183,13 @@
             </div>
         </div>
 
-        <!-- SECCIÓN INFERIOR: HISTORIAL DE TABLAS Y REGISTRO DE PAGO -->
+        <!-- SECCIÓN INFERIOR: HISTORIAL Y REGISTRO DE PAGO -->
         <div class="row g-3">
 
             <!-- SECCIÓN PESTAÑAS (TABS) -->
             <div class="col-md-8">
                 <div class="card border-0 shadow-sm p-3 h-100">
 
-                    <!-- NAVEGACIÓN TABS -->
                     <ul class="nav nav-tabs border-bottom-0 mb-3">
                         <li class="nav-item">
                             <button class="nav-link fw-bold @(pestanaActiva == "Compras" ? "active" : "")" @onclick='() => CambiarPestana("Compras")'>
@@ -210,7 +213,6 @@
                         </li>
                     </ul>
 
-                    <!-- CONTENIDO DE PESTAÑAS -->
                     @if (pestanaActiva == "Compras")
                     {
                         @if (!historialCompras.Any())
@@ -226,41 +228,129 @@
                                 <table class="table table-hover align-middle">
                                     <thead>
                                         <tr class="table-light">
-                                            <th>FECHA</th>
-                                            <th>Nº DE FACTURA</th>
-                                            <th>TOTAL</th>
-                                            <th>PAGADO</th>
-                                            <th>SALDO</th>
-                                            <th class="text-center">VER</th>
+                                            <th class="text-nowrap">FECHA</th>
+                                            <th class="text-nowrap">Nº DE FACTURA</th>
+                                            <th class="text-nowrap text-end">TOTAL</th>
+                                            <th class="text-nowrap text-end">PAGADO</th>
+                                            <th class="text-nowrap text-end">SALDO</th>
+                                            <th class="text-nowrap text-center">ESTADO</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach (var item in historialCompras)
+                                        @foreach (var item in listaComprasPaginada)
                                         {
                                             <tr>
-                                                <td>@item.Fecha.ToString("dd/MM/yyyy")</td>
-                                                <td>@item.NroFactura</td>
-                                                <td>$ @item.Total.ToString("N2")</td>
-                                                <td class="text-success fw-bold">$ @item.Pagado.ToString("N2")</td>
-                                                <td class="text-danger fw-bold">$ @item.Saldo.ToString("N2")</td>
-                                                <td class="text-center">
-                                                    <button class="btn btn-sm btn-outline-info rounded-circle">
-                                                        <i class="fa-solid fa-eye"></i>
-                                                    </button>
+                                                <td class="text-nowrap">@item.FechaVenta.ToString("dd/MM/yyyy")</td>
+                                                <td class="text-nowrap">@item.NumeroFactura</td>
+                                                <td class="text-nowrap text-end">$ @item.TotalVenta.ToString("N2")</td>
+                                                <td class="text-nowrap text-end text-success fw-bold">$ @item.TotalPagado.ToString("N2")</td>
+                                                <td class="text-nowrap text-end text-danger fw-bold">$ @item.SaldoPendiente.ToString("N2")</td>
+                                                <td class="text-nowrap text-center">
+                                                    @if (item.SaldoPendiente <= 0 || item.Estado == "PAGADO")
+                                                    {
+                                                        <span class="badge bg-success">PAGADO</span>
+                                                    }
+                                                    else if (item.TotalPagado > 0)
+                                                    {
+                                                        <span class="badge bg-warning text-dark">PARCIAL</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-danger">PENDIENTE</span>
+                                                    }
                                                 </td>
                                             </tr>
                                         }
                                     </tbody>
                                 </table>
                             </div>
+
+                            <!-- PIE DE TABLA CON PAGINACIÓN PARA COMPRAS -->
+                            <div class="pie-tabla border-top pt-2">
+                                <div class="info-registros">
+                                    Mostrando @(((paginaCompras - 1) * elementosPorPagina) + 1) a @Math.Min(paginaCompras * elementosPorPagina, totalCompras) de @totalCompras compras
+                                </div>
+                                <div class="paginacion">
+                                    <button class="btn-pagina" @onclick="() => CambiarPaginaCompras(paginaCompras - 1)" disabled="@(paginaCompras == 1)">
+                                        <i class="fa-solid fa-chevron-left"></i>
+                                    </button>
+
+                                    @foreach (var p in PaginasVisiblesCompras)
+                                    {
+                                        var numPagina = p;
+                                        <button class="btn-pagina @(paginaCompras == numPagina ? "activa" : "")" @onclick="() => CambiarPaginaCompras(numPagina)">
+                                            @numPagina
+                                        </button>
+                                    }
+
+                                    <button class="btn-pagina" @onclick="() => CambiarPaginaCompras(paginaCompras + 1)" disabled="@(paginaCompras == totalPaginasCompras)">
+                                        <i class="fa-solid fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
                         }
                     }
                     else if (pestanaActiva == "Pagos")
                     {
-                        <div class="text-center text-muted py-5">
-                            <i class="fa-solid fa-money-bill-transfer fa-2x mb-2 d-block"></i>
-                            No hay pagos registrados para este cliente.
-                        </div>
+                        @if (!historialPagos.Any())
+                        {
+                            <div class="text-center text-muted py-5">
+                                <i class="fa-solid fa-money-bill-transfer fa-2x mb-2 d-block"></i>
+                                No hay pagos registrados para este cliente.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr class="table-light">
+                                            <th class="text-nowrap">FECHA</th>
+                                            <th class="text-nowrap">Nº FACTURA</th>
+                                            <th class="text-nowrap">MÉTODO</th>
+                                            <th class="text-nowrap text-end">MONTO</th>
+                                            <th class="text-nowrap">OBSERVACIONES</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var pago in listaPagosPaginada)
+                                        {
+                                            <tr>
+                                                <td class="text-nowrap">@pago.FechaPago.ToString("dd/MM/yyyy HH:mm")</td>
+                                                <td class="text-nowrap">@(string.IsNullOrWhiteSpace(pago.NumeroFactura) ? "Pago Global" : pago.NumeroFactura)</td>
+                                                <td class="text-nowrap"><span class="badge bg-info text-dark">@pago.MetodoPago</span></td>
+                                                <td class="text-nowrap text-end text-success fw-bold">$ @pago.Monto.ToString("N2")</td>
+                                                <td class="text-muted small">@(string.IsNullOrWhiteSpace(pago.Observaciones) ? "-" : pago.Observaciones)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- PIE DE TABLA CON PAGINACIÓN PARA PAGOS -->
+                            <div class="pie-tabla border-top pt-2">
+                                <div class="info-registros">
+                                    Mostrando @(((paginaPagos - 1) * elementosPorPagina) + 1) a @Math.Min(paginaPagos * elementosPorPagina, totalPagos) de @totalPagos pagos
+                                </div>
+                                <div class="paginacion">
+                                    <button class="btn-pagina" @onclick="() => CambiarPaginaPagos(paginaPagos - 1)" disabled="@(paginaPagos == 1)">
+                                        <i class="fa-solid fa-chevron-left"></i>
+                                    </button>
+
+                                    @foreach (var p in PaginasVisiblesPagos)
+                                    {
+                                        var numPagina = p;
+                                        <button class="btn-pagina @(paginaPagos == numPagina ? "activa" : "")" @onclick="() => CambiarPaginaPagos(numPagina)">
+                                            @numPagina
+                                        </button>
+                                    }
+
+                                    <button class="btn-pagina" @onclick="() => CambiarPaginaPagos(paginaPagos + 1)" disabled="@(paginaPagos == totalPaginasPagos)">
+                                        <i class="fa-solid fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
                     }
                     else if (pestanaActiva == "Pedidos")
                     {
@@ -280,41 +370,69 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN REGISTRAR PAGO -->
+            <!-- SECCIÓN REGISTRAR PAGO DE CLIENTE (replicada de Registrar Pago a Proveedor) -->
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm p-3">
-                    <h6 class="fw-bold mb-3">REGISTRAR PAGO:</h6>
+                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                        <i class="fa-solid fa-hand-holding-dollar text-info me-2"></i>Registrar Pago de Cliente
+                    </h6>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">MONTO A PAGAR *</label>
+                        <label class="form-label small fw-bold">Venta / Factura a Abonar <span class="text-danger">*</span></label>
+                        <select class="form-select" value="@idVentaSeleccionada" @onchange="OnVentaSeleccionadaChanged">
+                            <option value="0">-- Seleccionar Factura Pendiente --</option>
+                            @foreach (var v in historialCompras.Where(x => x.SaldoPendiente > 0))
+                            {
+                                <option value="@v.IdVenta">
+                                    @(string.IsNullOrEmpty(v.NumeroFactura) ? $"Venta #{v.IdVenta}" : v.NumeroFactura) - (Saldo: $@v.SaldoPendiente.ToString("N2"))
+                                </option>
+                            }
+                        </select>
+                        @if (!historialCompras.Any(x => x.SaldoPendiente > 0))
+                        {
+                            <small class="text-success d-block mt-1">
+                                <i class="fa-solid fa-circle-check me-1"></i> El cliente no registra deudas pendientes.
+                            </small>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Monto a Abonar ($)</label>
                         <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" @bind="montoPago" step="0.01" min="0" placeholder="0.00" />
+                            <input type="number" class="form-control" @bind="montoPago" placeholder="0.00" min="0" step="0.01" />
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">MÉTODO DE PAGO *</label>
+                        <label class="form-label small fw-bold">Medio de Pago</label>
                         <select class="form-select" @bind="metodoPago">
-                            <option value="EFECTIVO">EFECTIVO</option>
-                            <option value="TRANSFERENCIA">TRANSFERENCIA</option>
-                            <option value="TARJETA">TARJETA</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Debito">Tarjeta de Débito</option>
+                            <option value="Credito">Tarjeta de Crédito</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">FECHA DE PAGO *</label>
-                        <input type="date" class="form-control" @bind="fechaPago" />
+                        <label class="form-label small fw-bold">Detalle / Concepto / Referencia</label>
+                        <textarea class="form-control" rows="3" @bind="observacionesPago" placeholder="Pago a cuenta, cancelación de factura X..."></textarea>
                     </div>
 
-                    <div class="d-grid gap-2 mt-4">
-                        <button class="btn btn-info text-white fw-bold py-2" @onclick="RegistrarPago">
-                            <i class="fa-solid fa-check me-1"></i> REGISTRAR PAGO
-                        </button>
-                        <button class="btn btn-light fw-bold py-2" @onclick="LimpiarFormularioPago">
-                            X CANCELAR
-                        </button>
-                    </div>
+                    <button class="btn btn-info text-white w-100 fw-bold py-2 mt-2"
+                            @onclick="RegistrarPago"
+                            disabled="@(procesandoPago || idVentaSeleccionada == 0)">
+                        @if (procesandoPago)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            <span>Procesando...</span>
+                        }
+                        else
+                        {
+                            <i class="fa-solid fa-check me-1"></i>
+                            <span>Confirmar Pago</span>
+                        }
+                    </button>
                 </div>
             </div>
 
@@ -334,21 +452,45 @@
         PorcentajeDescuento = 0
     };
 
+    private ClienteResumenDto resumenCliente = new();
+    private List<ClienteHistorialCompraDto> historialCompras = new();
+    private List<ClienteHistorialPagoDto> historialPagos = new();
+
     private bool cargando = false;
     private bool modoEdicion = false;
+    private bool procesandoPago = false;
     private string? mensajeError = null;
+    private string? mensajeExito = null;
     private string pestanaActiva = "Compras";
 
-    // Variables Financieras y Formulario de Pago
-    private decimal totalComprado = 0.00m;
+    // Formulario de Pago
+    private int idVentaSeleccionada = 0;
     private decimal montoPago = 0.00m;
-    private string metodoPago = "EFECTIVO";
-    private DateTime fechaPago = DateTime.Now;
+    private string metodoPago = "Efectivo";
+    private string? observacionesPago = null;
 
-    // Model de prueba local para simular la tabla de compras
-    private List<CompraHistorialDto> historialCompras = new();
+    // PAGINACIÓN EN CLIENTE
+    private int elementosPorPagina = 5;
+    private int paginaCompras = 1;
+    private int paginaPagos = 1;
+
+    private int totalCompras => historialCompras.Count;
+    private int totalPaginasCompras => (int)Math.Ceiling((double)totalCompras / elementosPorPagina);
+    private IEnumerable<ClienteHistorialCompraDto> listaComprasPaginada =>
+        historialCompras.Skip((paginaCompras - 1) * elementosPorPagina).Take(elementosPorPagina);
+
+    private int totalPagos => historialPagos.Count;
+    private int totalPaginasPagos => (int)Math.Ceiling((double)totalPagos / elementosPorPagina);
+    private IEnumerable<ClienteHistorialPagoDto> listaPagosPaginada =>
+        historialPagos.Skip((paginaPagos - 1) * elementosPorPagina).Take(elementosPorPagina);
+
+    private List<int> PaginasVisiblesCompras => ObtenerPaginasVisibles(paginaCompras, totalPaginasCompras);
+    private List<int> PaginasVisiblesPagos => ObtenerPaginasVisibles(paginaPagos, totalPaginasPagos);
 
     private bool EsNuevo => !IdCliente.HasValue;
+
+    // El descuento solo se puede definir para clientes "Particular"
+    private bool EsClienteParticular => cliente.TipoCliente == "Particular";
 
     protected override async Task OnInitializedAsync()
     {
@@ -360,16 +502,43 @@
 
     private async Task CargarClienteExistente()
     {
+        if (!IdCliente.HasValue) return;
+
         cargando = true;
         mensajeError = null;
+
         try
         {
             var c = await ClienteService.ObtenerPorIdAsync(IdCliente.Value);
             if (c != null)
             {
                 cliente = c;
-                // Si el cliente no tiene compras asociadas, se inicializa por defecto en $0.00
-                totalComprado = 0.00m;
+
+                var resumenTask = ClienteService.ObtenerResumenClienteAsync(IdCliente.Value);
+                var comprasTask = ClienteService.ObtenerHistorialComprasAsync(IdCliente.Value);
+                var pagosTask = ClienteService.ObtenerHistorialPagosAsync(IdCliente.Value);
+
+                await Task.WhenAll(resumenTask, comprasTask, pagosTask);
+
+                resumenCliente = await resumenTask ?? new ClienteResumenDto { IdCliente = IdCliente.Value };
+                historialCompras = await comprasTask ?? new List<ClienteHistorialCompraDto>();
+                historialPagos = await pagosTask ?? new List<ClienteHistorialPagoDto>();
+
+                paginaCompras = 1;
+                paginaPagos = 1;
+
+                // Preselecciona la primera venta con saldo pendiente (igual que en Proveedores)
+                var ventaConDeuda = historialCompras.FirstOrDefault(v => v.SaldoPendiente > 0);
+                if (ventaConDeuda != null)
+                {
+                    idVentaSeleccionada = ventaConDeuda.IdVenta;
+                    montoPago = ventaConDeuda.SaldoPendiente;
+                }
+                else
+                {
+                    idVentaSeleccionada = 0;
+                    montoPago = 0.00m;
+                }
             }
             else
             {
@@ -391,6 +560,47 @@
         pestanaActiva = nombrePestana;
     }
 
+    private void CambiarPaginaCompras(int nuevaPagina)
+    {
+        if (nuevaPagina >= 1 && nuevaPagina <= totalPaginasCompras)
+        {
+            paginaCompras = nuevaPagina;
+        }
+    }
+
+    private void CambiarPaginaPagos(int nuevaPagina)
+    {
+        if (nuevaPagina >= 1 && nuevaPagina <= totalPaginasPagos)
+        {
+            paginaPagos = nuevaPagina;
+        }
+    }
+
+    private List<int> ObtenerPaginasVisibles(int paginaActual, int totalPaginas)
+    {
+        var paginas = new List<int>();
+        if (totalPaginas <= 0) return paginas;
+
+        int inicio = Math.Max(1, paginaActual - 1);
+        int fin = Math.Min(totalPaginas, paginaActual + 1);
+
+        if (paginaActual == 1)
+        {
+            fin = Math.Min(totalPaginas, 3);
+        }
+        else if (paginaActual == totalPaginas)
+        {
+            inicio = Math.Max(1, totalPaginas - 2);
+        }
+
+        for (int i = inicio; i <= fin; i++)
+        {
+            paginas.Add(i);
+        }
+
+        return paginas;
+    }
+
     private void HabilitarEdicion()
     {
         modoEdicion = true;
@@ -409,9 +619,25 @@
         }
     }
 
+    // Si el cliente deja de ser "Particular", el descuento vuelve a 0
+    private void OnTipoClienteChanged()
+    {
+        if (!EsClienteParticular)
+        {
+            cliente.PorcentajeDescuento = 0;
+        }
+    }
+
     private async Task GuardarCliente()
     {
         mensajeError = null;
+
+        // Los clientes "Normal" no tienen descuento
+        if (!EsClienteParticular)
+        {
+            cliente.PorcentajeDescuento = 0;
+        }
+
         try
         {
             if (EsNuevo)
@@ -433,6 +659,8 @@
 
     private async Task ConfirmarDesactivacion()
     {
+        if (!IdCliente.HasValue) return;
+
         bool confirmado = await JS.InvokeAsync<bool>(
             "confirm",
             $"¿Está seguro de desactivar al cliente {cliente.Apellido}, {cliente.Nombre}?");
@@ -451,36 +679,75 @@
         }
     }
 
-    private void RegistrarPago()
+    // Al elegir una factura del desplegable, el monto se autocompleta con su saldo pendiente
+    private void OnVentaSeleccionadaChanged(ChangeEventArgs e)
     {
-        if (montoPago <= 0)
+        if (int.TryParse(e.Value?.ToString(), out int idVenta))
         {
-            mensajeError = "Ingrese un monto a pagar válido.";
+            idVentaSeleccionada = idVenta;
+            var venta = historialCompras.FirstOrDefault(v => v.IdVenta == idVentaSeleccionada);
+            montoPago = venta != null ? venta.SaldoPendiente : 0.00m;
+        }
+    }
+
+    private async Task RegistrarPago()
+    {
+        if (!IdCliente.HasValue) return;
+
+        if (idVentaSeleccionada <= 0)
+        {
+            mensajeError = "Por favor, seleccione una factura con saldo pendiente.";
             return;
         }
 
-        // Lógica de imputación de pago contra la API
-        LimpiarFormularioPago();
+        if (montoPago <= 0)
+        {
+            mensajeError = "Ingrese un monto a pagar mayor a cero.";
+            return;
+        }
+
+        procesandoPago = true;
+        mensajeError = null;
+        mensajeExito = null;
+
+        try
+        {
+            var pagoDto = new RegistrarPagoClienteDto
+            {
+                IdCliente = IdCliente.Value,
+                IdVenta = idVentaSeleccionada,
+                Monto = montoPago,
+                TipoPago = metodoPago,
+                Observaciones = observacionesPago,
+                FechaPago = DateTime.Now
+            };
+
+            await ClienteService.RegistrarPagoClienteAsync(pagoDto);
+
+            mensajeExito = $"Pago de $ {montoPago:N2} registrado correctamente.";
+            LimpiarFormularioPago();
+            await CargarClienteExistente();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al registrar el pago: {ex.Message}";
+        }
+        finally
+        {
+            procesandoPago = false;
+        }
     }
 
     private void LimpiarFormularioPago()
     {
+        idVentaSeleccionada = 0;
         montoPago = 0.00m;
-        metodoPago = "EFECTIVO";
-        fechaPago = DateTime.Now;
+        metodoPago = "Efectivo";
+        observacionesPago = null;
     }
 
     private void Volver()
     {
         Navigation.NavigateTo("/clientes");
-    }
-
-    public class CompraHistorialDto
-    {
-        public DateTime Fecha { get; set; }
-        public string NroFactura { get; set; } = string.Empty;
-        public decimal Total { get; set; }
-        public decimal Pagado { get; set; }
-        public decimal Saldo { get; set; }
     }
 }

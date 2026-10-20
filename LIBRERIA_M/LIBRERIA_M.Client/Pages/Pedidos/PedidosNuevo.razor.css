@@ -1,0 +1,441 @@
+﻿/* ==========================================
+   CONTENEDOR GENERAL Y TÍTULO
+========================================== */
+.page-container {
+    padding: 35px;
+    background: #F5F5F5;
+    min-height: 100vh;
+}
+
+.titulo-modulo {
+    font-size: 34px;
+    font-weight: bold;
+    color: #222;
+    margin-bottom: 25px;
+}
+
+/* ==========================================
+   BOTÓN VOLVER
+========================================== */
+.toolbar-volver {
+    margin-bottom: 20px;
+}
+
+.btn-volver {
+    background: transparent;
+    color: #1E3AF3;
+    border: none;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    transition: transform .2s ease, color .2s ease;
+}
+
+    .btn-volver:hover {
+        color: #1632D8;
+        transform: translateX(-3px);
+    }
+
+/* ==========================================
+   TARJETAS
+========================================== */
+.card-principal {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+}
+
+.card-secundaria {
+    background: #F8F8F8;
+    border-radius: 15px;
+    padding: 25px;
+}
+
+/* ==========================================
+   GRID DE CAMPOS SUPERIORES
+========================================== */
+.grid-formulario {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px 24px;
+}
+
+.span-full {
+    grid-column: 1 / -1;
+}
+
+/* ==========================================
+   FORM CONTROLS & INPUTS
+========================================== */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: #333;
+    text-transform: uppercase;
+}
+
+.input-form,
+.textarea-form,
+.input-select,
+.input-text {
+    width: 100%;
+    height: 48px;
+    border-radius: 10px;
+    border: 1px solid #D8D8D8;
+    padding: 0 16px;
+    font-size: 14px;
+    color: #333;
+    background: #F8F8F8;
+    transition: all .2s ease;
+    box-sizing: border-box;
+}
+
+.textarea-form {
+    height: 110px;
+    padding: 14px 16px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+    .input-form:focus,
+    .textarea-form:focus,
+    .input-select:focus,
+    .input-text:focus {
+        outline: none;
+        border-color: #3A86FF;
+        background: #FFFFFF;
+        box-shadow: 0 0 5px rgba(58, 134, 255, .25);
+    }
+
+.input-disabled {
+    background: #EAEAEA;
+    color: #666;
+    cursor: not-allowed;
+    border-color: #D1D1D1;
+}
+
+/* Validaciones */
+.text-danger {
+    color: #D70000;
+}
+
+.text-danger-msg {
+    color: #D70000;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+/* Badge contenedor de Estado */
+.badge-contenedor {
+    display: flex;
+    align-items: center;
+    height: 48px;
+}
+
+/* ==========================================
+   ESTADOS Y BADGES
+========================================== */
+.estado-disponible, .estado-stockbajo, .estado-sinstock, .estado-cancelado {
+    display: inline-block;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 800;
+    border-radius: 999px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* PENDIENTE */
+.estado-sinstock {
+    background-color: #FFCDD2;
+    color: #C62828;
+}
+
+/* TERMINADO */
+.estado-stockbajo {
+    background-color: #FFD56B;
+    color: #C26300;
+}
+
+/* ENTREGADO */
+.estado-disponible {
+    background-color: #93F26C;
+    color: #1B5E20;
+}
+
+/* ==========================================
+   SECCIÓN INFERIOR: PRODUCTOS Y RESUMEN
+========================================== */
+.seccion-inferior-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 25px;
+    align-items: start;
+}
+
+.subtitulo-seccion {
+    font-size: 16px;
+    font-weight: 800;
+    color: #222;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+}
+
+/* ==========================================
+   TABLA DE PRODUCTOS
+========================================== */
+.tabla-container {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #E5E5E5;
+}
+
+.tabla-stock {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    table-layout: auto;
+}
+
+    .tabla-stock thead {
+        background: #ECECEC;
+    }
+
+    .tabla-stock th {
+        padding: 14px 12px;
+        font-weight: 700;
+        color: #444;
+        font-size: 13px;
+        vertical-align: middle;
+        text-align: left;
+    }
+
+    .tabla-stock td {
+        padding: 14px 12px;
+        border-bottom: 1px solid #E5E5E5;
+        font-size: 14px;
+        color: #444;
+        vertical-align: middle;
+    }
+
+.sin-registros {
+    text-align: center;
+    color: #777;
+    padding: 35px;
+    font-style: italic;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* ==========================================
+   BARRA HORIZONTAL AGREGAR PRODUCTO
+========================================== */
+.bar-agregar-producto {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: white;
+    padding: 14px;
+    border: 1px solid #E5E5E5;
+    border-radius: 12px;
+}
+
+.select-prod-grow {
+    flex: 1;
+}
+
+.cant-prod-fix {
+    width: 90px;
+}
+
+.btn-agregar-prod {
+    background: #00C2D1;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0 22px;
+    height: 48px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .2s ease;
+}
+
+    .btn-agregar-prod:hover {
+        background: #00A8B5;
+    }
+
+/* ==========================================
+   CAJA DE RESUMEN
+========================================== */
+.caja-resumen {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.resumen-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #444;
+    font-weight: 600;
+}
+
+    .resumen-fila strong {
+        color: #222;
+    }
+
+.linea-divisora {
+    border: 0;
+    border-top: 1px solid #D8D8D8;
+    margin: 14px 0;
+}
+
+.resumen-fila.total {
+    font-size: 16px;
+    font-weight: 800;
+    color: #1E3AF3;
+}
+
+    .resumen-fila.total strong {
+        color: #1E3AF3;
+        font-size: 18px;
+    }
+
+/* ==========================================
+   BOTONES DE ACCIÓN (FOOTER)
+========================================== */
+.footer-acciones {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+    padding-top: 15px;
+}
+
+.btn-cancelar {
+    background: #FFCDD2;
+    color: #C62828;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+    .btn-cancelar:hover {
+        background: #F4AAAA;
+    }
+
+.btn-confirmar {
+    background: #93F26C;
+    color: #1B5E20;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+    .btn-confirmar:hover:not(:disabled) {
+        background: #7EE055;
+    }
+
+    .btn-confirmar:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+
+/* ==========================================
+   UTILITARIOS DE MARGEN Y ALINEACIÓN
+========================================== */
+.mt-2 {
+    margin-top: 8px;
+}
+
+.mt-3 {
+    margin-top: 16px;
+}
+
+.mt-4 {
+    margin-top: 24px;
+}
+
+.py-4 {
+    padding-top: 24px;
+    padding-bottom: 24px;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+/* ==========================================
+   RESPONSIVE / DISPOSITIVOS MÓVILES
+========================================== */
+@media (max-width: 992px) {
+    .grid-formulario {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .seccion-inferior-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .page-container {
+        padding: 15px;
+    }
+
+    .card-principal {
+        padding: 18px;
+    }
+
+    .grid-formulario {
+        grid-template-columns: 1fr;
+    }
+
+    .bar-agregar-producto {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cant-prod-fix {
+        width: 100%;
+    }
+
+    .footer-acciones {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .btn-cancelar,
+    .btn-confirmar {
+        width: 100%;
+    }
+}

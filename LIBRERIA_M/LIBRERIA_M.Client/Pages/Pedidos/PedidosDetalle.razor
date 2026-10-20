@@ -1,0 +1,383 @@
+﻿@page "/pedidos/{idPedido:int}"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using global::LIBRERIA_M.Client.Services
+@using System.Globalization
+
+@inject PedidoService PedidoService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Detalle Pedido - Librería</PageTitle>
+
+<div class="page-container">
+
+    <h2 class="titulo-modulo">
+        PEDIDOS (DETALLE)
+    </h2>
+
+    @if (cargando)
+    {
+        <div class="card-principal text-center py-5">
+            <p class="sin-registros">Cargando detalles del pedido...</p>
+        </div>
+    }
+    else if (pedido == null)
+    {
+        <div class="card-principal text-center py-5">
+            <p class="text-danger fw-bold">No se encontró el pedido solicitado.</p>
+            <button class="btn-volver mt-3" @onclick="Volver">
+                <i class="fa-solid fa-arrow-left"></i> VOLVER AL LISTADO PEDIDOS
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="toolbar-acciones">
+            <button class="btn-volver" @onclick="Volver">
+                <i class="fa-solid fa-arrow-left"></i> VOLVER AL LISTADO PEDIDOS
+            </button>
+
+            <div class="grupo-botones-flujo">
+                <button class="btn-accion btn-editar-pedido" @onclick="EditarPedido">
+                    <i class="fa-solid fa-pen"></i> EDITAR PEDIDO
+                </button>
+
+                @if (pedido.Estado?.ToUpper() != "CANCELADO" && pedido.Estado?.ToUpper() != "ENTREGADO")
+                {
+                    <button class="btn-accion btn-cancelar-pedido" @onclick="CancelarPedido">
+                        <i class="fa-solid fa-square-xmark"></i> CANCELAR PEDIDO
+                    </button>
+                }
+
+                @if (pedido.Estado?.ToUpper() == "PENDIENTE")
+                {
+                    <button class="btn-accion btn-marcar-terminado" @onclick="MarcarComoTerminado">
+                        MARCAR COMO TERMINADO
+                    </button>
+                }
+                else if (pedido.Estado?.ToUpper() == "TERMINADO")
+                {
+                    <button class="btn-accion btn-marcar-entregado" @onclick="MarcarComoEntregado">
+                        MARCAR COMO ENTREGADO
+                    </button>
+                }
+            </div>
+        </div>
+
+        <div class="grid-layout-detalle">
+
+            <div class="columna-principal">
+
+                <div class="grid-dos-columnas">
+
+                    <div class="card-principal info-pedido-card">
+                        <h3 class="subtitulo-seccion">INFORMACION DEL PEDIDO</h3>
+
+                        <div class="lista-detalles">
+                            <div class="item-detalle">
+                                <span class="label"><i class="fa-solid fa-arrow-right-to-bracket"></i> N°PEDIDO:</span>
+                                <strong class="valor">@pedido.NumeroPedido</strong>
+                            </div>
+                            <div class="item-detalle">
+                                <span class="label"><i class="fa-solid fa-user"></i> CLIENTE:</span>
+                                <strong class="valor">@pedido.Cliente</strong>
+                            </div>
+                            <div class="item-detalle">
+                                <span class="label"><i class="fa-solid fa-house"></i> ORIGEN:</span>
+                                <strong class="valor">@(string.IsNullOrWhiteSpace(pedido.OrigenPedido) ? "-" : pedido.OrigenPedido.ToUpper())</strong>
+                            </div>
+                            <div class="item-detalle">
+                                <span class="label"><i class="fa-regular fa-calendar"></i> FECHA DEL PEDIDO:</span>
+                                <strong class="valor">@pedido.FechaPedido.ToString("dd/MM/yyyy")</strong>
+                            </div>
+                            <div class="item-detalle">
+                                <span class="label"><i class="fa-regular fa-calendar-check"></i> FECHA DE ENTREGA:</span>
+                                <strong class="valor">@(pedido.FechaEntrega.HasValue ? pedido.FechaEntrega.Value.ToString("dd/MM/yyyy") : "-")</strong>
+                            </div>
+                            <div class="item-detalle">
+                                <span class="label"><i class="fa-regular fa-clock"></i> ESTADO ACTUAL:</span>
+                                <span class="@ObtenerClaseBadgeEstado(pedido.Estado)">
+                                    @(string.IsNullOrWhiteSpace(pedido.Estado) ? "Sin estado" : pedido.Estado.ToUpper())
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="caja-detalle-texto mt-3">
+                            <span class="label-box"><i class="fa-solid fa-bars-staggered"></i> DETALLE DEL PEDIDO:</span>
+                        </div>
+                    </div>
+
+                    <div class="card-principal flujo-card">
+                        <h3 class="subtitulo-seccion-flujo">FLUJO DEL PEDIDO</h3>
+
+                        <div class="stepper-contenedor">
+                            <div class="paso-item @ObtenerClasePaso("PENDIENTE", 1)">
+                                <div class="circulo-paso">1</div>
+                                <span class="paso-titulo titulo-pendiente">PENDIENTE</span>
+                                <p class="paso-desc">PEDIDO CREADO, AÚN NO SE HA COMENZADO.</p>
+                            </div>
+
+                            <div class="paso-item @ObtenerClasePaso("TERMINADO", 2)">
+                                <div class="circulo-paso">2</div>
+                                <span class="paso-titulo titulo-terminado">TERMINADO</span>
+                                <p class="paso-desc">PEDIDO PREPARADO, LISTO PARA ENTREGAR.</p>
+                            </div>
+
+                            <div class="paso-item @ObtenerClasePaso("ENTREGADO", 3)">
+                                <div class="circulo-paso">3</div>
+                                <span class="paso-titulo titulo-entregado">ENTREGADO</span>
+                                <p class="paso-desc">PEDIDO ENTREGADO AL CLIENTE, CONVERTIDO EN VENTA.</p>
+                            </div>
+
+                            <div class="paso-item @(pedido.Estado?.ToUpper() == "CANCELADO" ? "paso-activo paso-cancelado" : "paso-desactivado")">
+                                <div class="circulo-paso">X</div>
+                                <span class="paso-titulo titulo-cancelado">CANCELADO</span>
+                                <p class="paso-desc">PEDIDO CANCELADO NO SERÁ PROCESADO</p>
+                            </div>
+                        </div>
+
+                        <div class="banner-alerta-info mt-3">
+                            <i class="fa-solid fa-circle-info icon-info-blue"></i>
+                            <p>PARA CAMBIAR EL ESTADO DEL PEDIDO DEBE SEGUIR EL FLUJO ESTABLECIDO. CADA ACCION REQUIERE UNA CONFIRMACION.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="card-principal mt-4">
+                    <h3 class="subtitulo-seccion">PRODUCTOS DEL PEDIDO</h3>
+
+                    <div class="tabla-container mt-2">
+                        <table class="tabla-stock">
+                            <thead>
+                                <tr>
+                                    <th>PRODUCTO</th>
+                                    <th class="text-center">CANTIDAD</th>
+                                    <th class="text-right">SUBTOTAL</th>
+                                    <th class="text-right">DESCUENTO</th>
+                                    <th class="text-right">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (pedido.Detalle != null && pedido.Detalle.Any())
+                                {
+                                    @foreach (var d in pedido.Detalle)
+                                    {
+                                        var descProducto = d.Subtotal * (pedido.PorcentajeDescuento / 100m);
+                                        var totalProducto = d.Subtotal - descProducto;
+
+                                        <tr>
+                                            <td><strong>@d.NombreProducto</strong></td>
+                                            <td class="text-center">@d.Cantidad</td>
+                                            <td class="text-right">@d.Subtotal.ToString("C", formatoMoneda)</td>
+                                            <td class="text-right">@descProducto.ToString("C", formatoMoneda)</td>
+                                            <td class="text-right"><strong>@totalProducto.ToString("C", formatoMoneda)</strong></td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="sin-registros py-4">
+                                            No hay productos registrados en este pedido.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (pedido.Estado?.ToUpper() == "PENDIENTE")
+                    {
+                        <div class="mt-3">
+                            <button class="btn-cyan" @onclick="AgregarProducto">
+                                + AGREGAR PRODUCTO
+                            </button>
+                        </div>
+                    }
+                </div>
+
+                <div class="card-principal mt-4">
+                    <h3 class="subtitulo-seccion">OBSERVACIONES:</h3>
+                    <div class="caja-observaciones">
+                        <p>@(string.IsNullOrWhiteSpace(pedido.Observaciones) ? "Sin observaciones registradas." : pedido.Observaciones)</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="columna-secundaria">
+
+                <div class="card-principal">
+                    <h3 class="subtitulo-seccion">RESUMEN DEL PEDIDO</h3>
+
+                    <div class="caja-resumen mt-2">
+                        <div class="resumen-fila">
+                            <span>SUBTOTAL</span>
+                            <strong>@SubtotalPedido.ToString("C", formatoMoneda)</strong>
+                        </div>
+                        <div class="resumen-fila mt-2">
+                            <span>DESCUENTO (@pedido.PorcentajeDescuento.ToString("0.##")%)</span>
+                            <strong class="text-danger">-@MontoDescuentoTotal.ToString("C", formatoMoneda)</strong>
+                        </div>
+                        <hr class="linea-divisora" />
+                        <div class="resumen-fila total mt-2">
+                            <span>TOTAL</span>
+                            <strong>@TotalFinalPedido.ToString("C", formatoMoneda)</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-principal mt-4">
+                    <h3 class="subtitulo-seccion">HISTORIAL DE ESTADOS</h3>
+
+                    <div class="timeline-historial mt-3">
+                        <div class="item-timeline">
+                            <div class="punto-timeline rojo"></div>
+                            <div class="contenido-timeline">
+                                <span>@pedido.FechaPedido.ToString("dd/MM/yyyy HH:mm") Pedido creado Pendiente</span>
+                            </div>
+                        </div>
+                        <div class="item-timeline">
+                            <div class="punto-timeline gris"></div>
+                        </div>
+                        <div class="item-timeline">
+                            <div class="punto-timeline gris"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    }
+
+</div>
+
+@code {
+    [Parameter]
+    public int IdPedido { get; set; }
+
+    private PedidoDTO? pedido;
+    private bool cargando = true;
+
+    private decimal SubtotalPedido => pedido?.Detalle?.Sum(d => d.Subtotal) ?? (pedido?.Total ?? 0m);
+    private decimal MontoDescuentoTotal => SubtotalPedido * ((pedido?.PorcentajeDescuento ?? 0m) / 100m);
+    private decimal TotalFinalPedido => SubtotalPedido - MontoDescuentoTotal;
+
+    private readonly CultureInfo formatoMoneda = new CultureInfo("es-AR")
+    {
+        NumberFormat = new NumberFormatInfo
+        {
+            CurrencySymbol = "$",
+            CurrencyPositivePattern = 0,
+            CurrencyNegativePattern = 8,
+            CurrencyGroupSeparator = ".",
+            CurrencyDecimalSeparator = ","
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDetallePedido();
+    }
+
+    private async Task CargarDetallePedido()
+    {
+        cargando = true;
+        try
+        {
+            pedido = await PedidoService.ObtenerPorId(IdPedido);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al obtener el detalle del pedido: {ex.Message}");
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task MarcarComoTerminado()
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "⚠️ ¿Desea cambiar el estado del pedido a TERMINADO?\n\nEl pedido pasará a estar preparado y listo para entregar."))
+        {
+            var exito = await PedidoService.TerminarPedido(IdPedido);
+            if (exito) await CargarDetallePedido();
+            else await JS.InvokeVoidAsync("alert", "Error al cambiar el estado a TERMINADO.");
+        }
+    }
+
+    private async Task MarcarComoEntregado()
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "⚠️ ATENCIÓN: ¿Desea confirmar la ENTREGA del pedido?\n\nAl confirmar, se descontará el stock de los productos y se registrará automáticamente la venta correspondiente."))
+        {
+            var exito = await PedidoService.EntregarPedido(IdPedido);
+            if (exito) await CargarDetallePedido();
+            else await JS.InvokeVoidAsync("alert", "Error al procesar la entrega del pedido.");
+        }
+    }
+
+    private async Task CancelarPedido()
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "⚠️ ¿Está seguro de CANCELAR este pedido?\n\nEl pedido quedará anulado y no se podrá procesar."))
+        {
+            var exito = await PedidoService.CancelarPedido(IdPedido);
+            if (exito) await CargarDetallePedido();
+            else await JS.InvokeVoidAsync("alert", "Error al cancelar el pedido.");
+        }
+    }
+
+    private string ObtenerClasePaso(string estadoPaso, int numeroPaso)
+    {
+        if (pedido == null) return "paso-desactivado";
+        var estActual = pedido.Estado?.ToUpper();
+
+        if (estActual == "CANCELADO") return "paso-desactivado";
+
+        int pasoActualNum = estActual switch
+        {
+            "PENDIENTE" => 1,
+            "TERMINADO" => 2,
+            "ENTREGADO" => 3,
+            _ => 0
+        };
+
+        // Únicamente el paso activo actual se resalta; los demás se desactivan en gris
+        if (pasoActualNum == numeroPaso) return "paso-activo";
+
+        return "paso-desactivado";
+    }
+
+    private string ObtenerClaseBadgeEstado(string? estado)
+    {
+        if (string.IsNullOrEmpty(estado)) return "";
+        var est = estado.ToUpper().Trim();
+
+        return est switch
+        {
+            "PENDIENTE" => "estado-sinstock",
+            "TERMINADO" => "estado-stockbajo",
+            "ENTREGADO" => "estado-disponible",
+            "CANCELADO" => "estado-cancelado",
+            _ => ""
+        };
+    }
+
+    private void EditarPedido()
+    {
+        // Navegación hacia formulario de edición si corresponde
+    }
+
+    private void AgregarProducto()
+    {
+        // Lógica para agregar productos
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/pedidos");
+    }
+}

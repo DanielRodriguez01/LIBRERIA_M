@@ -1,0 +1,283 @@
+﻿@page "/ventas/pago-pendiente/{IdVenta:int}"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using LIBRERIA_M.Client.Models.Ventas
+@using LIBRERIA_M.Client.Services
+@using System.Globalization
+
+@inject VentaService VentaService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Registrar Pago - Librería</PageTitle>
+
+<div class="page-container">
+
+    <h2 class="titulo-modulo">
+        REGISTRAR PAGO PENDIENTE
+    </h2>
+
+    <div class="card-principal">
+
+        <div class="card-secundaria">
+
+            @if (cargando)
+            {
+                <div class="cargando-container">
+                    <p>Cargando información de la venta...</p>
+                </div>
+            }
+            else if (venta == null)
+            {
+                <div class="alerta-error">
+                    <p>No se encontró la venta solicitada o no se pudo cargar la información.</p>
+                    <button class="btn-secundario" @onclick="Volver">Volver al listado</button>
+                </div>
+            }
+            else
+            {
+                <!-- ========================= -->
+                <!-- Encabezado / Información de la Venta -->
+                <!-- ========================= -->
+                <div class="resumen-venta-grid">
+
+                    <div class="info-grupo">
+                        <label>N° Factura:</label>
+                        <span><strong>@venta.NumeroFactura</strong></span>
+                    </div>
+
+                    <div class="info-grupo">
+                        <label>Fecha de Venta:</label>
+                        <span>@venta.FechaVenta.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+
+                    <div class="info-grupo">
+                        <label>Cliente:</label>
+                        <span>@(string.IsNullOrWhiteSpace(venta.ClienteNombre) ? "Consumidor Final" : venta.ClienteNombre)</span>
+                    </div>
+
+                    <div class="info-grupo">
+                        <label>Documento:</label>
+                        <span>@(string.IsNullOrWhiteSpace(venta.ClienteDocumento) ? "-" : venta.ClienteDocumento)</span>
+                    </div>
+
+                </div>
+
+                <hr class="separador" />
+
+                <!-- ========================= -->
+                <!-- Métricas Financieras -->
+                <!-- ========================= -->
+                <div class="metricas-pago-grid">
+
+                    <div class="metrica-card">
+                        <span class="metrica-titulo">Total Venta</span>
+                        <span class="metrica-monto">$ @venta.TotalVenta.ToString("N2")</span>
+                    </div>
+
+                    <div class="metrica-card">
+                        <span class="metrica-titulo">Monto Pagado</span>
+                        <span class="metrica-monto exito">$ @venta.MontoPagado.ToString("N2")</span>
+                    </div>
+
+                    <div class="metrica-card">
+                        <span class="metrica-titulo">Saldo Pendiente</span>
+                        <span class="metrica-monto peligro">$ @venta.SaldoPendiente.ToString("N2")</span>
+                    </div>
+
+                </div>
+
+                <!-- ========================= -->
+                <!-- Formulario para Registrar Abono -->
+                <!-- ========================= -->
+                <div class="formulario-pago">
+
+                    <h3 class="subtitulo-seccion">Datos del Nuevo Pago</h3>
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label for="montoAbono">Monto a Abonar ($):</label>
+                            <input id="montoAbono"
+                                   type="number"
+                                   step="0.01"
+                                   min="0.01"
+                                   max="@venta.SaldoPendiente"
+                                   class="input-control"
+                                   @bind="montoAbonar"
+                                   @bind:event="oninput" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="metodoPago">Método de Pago:</label>
+                            <select id="metodoPago" class="input-control" @bind="tipoPago">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+                                <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+                                <option value="Transferencia">Transferencia / Mercado Pago</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group col-span-2">
+                            <label for="observaciones">Observaciones / Nota:</label>
+                            <input id="observaciones"
+                                   type="text"
+                                   class="input-control"
+                                   placeholder="Opcional (Ej. Transferencia comprobante #1234)"
+                                   @bind="observaciones" />
+                        </div>
+
+                    </div>
+
+                    <!-- Proyección del nuevo saldo -->
+                    <div class="resumen-nuevo-saldo">
+                        <span>Nuevo Saldo Restante: </span>
+                        <strong>$ @NuevoSaldoRestante.ToString("N2")</strong>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(mensajeError))
+                    {
+                        <div class="mensaje-error-form">
+                            @mensajeError
+                        </div>
+                    }
+
+                    <!-- ========================= -->
+                    <!-- Botones de Acción -->
+                    <!-- ========================= -->
+                    <div class="acciones-form">
+
+                        <button class="btn-cancelar"
+                                type="button"
+                                @onclick="Volver"
+                                disabled="@procesando">
+                            Cancelar
+                        </button>
+
+                        <button class="btn-principal"
+                                type="button"
+                                @onclick="GuardarPago"
+                                disabled="@(procesando || montoAbonar <= 0 || montoAbonar > venta.SaldoPendiente)">
+                            @(procesando ? "Procesando..." : "Confirmar Pago")
+                        </button>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>
+
+@code {
+
+    [Parameter]
+    public int IdVenta { get; set; }
+
+    private VentaListadoDto? venta;
+    private bool cargando = true;
+    private bool procesando = false;
+
+    private decimal montoAbonar = 0;
+    private string tipoPago = "Efectivo";
+    private string observaciones = "";
+    private string mensajeError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarVenta();
+    }
+
+    private async Task CargarVenta()
+    {
+        cargando = true;
+        try
+        {
+            var ventas = await VentaService.ListarVentas(null, null, null, null);
+            venta = ventas?.FirstOrDefault(v => v.IdVenta == IdVenta);
+
+            if (venta != null)
+            {
+                // Sugerir el total del saldo pendiente por defecto
+                montoAbonar = venta.SaldoPendiente;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al obtener la venta: {ex.Message}");
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private decimal NuevoSaldoRestante
+    {
+        get
+        {
+            if (venta == null) return 0;
+            var nuevoSaldo = venta.SaldoPendiente - montoAbonar;
+            return nuevoSaldo < 0 ? 0 : nuevoSaldo;
+        }
+    }
+
+    private async Task GuardarPago()
+    {
+        mensajeError = "";
+
+        if (montoAbonar <= 0)
+        {
+            mensajeError = "El monto a abonar debe ser mayor a 0.";
+            return;
+        }
+
+        if (venta != null && montoAbonar > venta.SaldoPendiente)
+        {
+            mensajeError = "El monto ingresado excede el saldo pendiente de la venta.";
+            return;
+        }
+
+        procesando = true;
+
+        try
+        {
+            var pagoDto = new PagoVentaCreacionDto
+            {
+                IdVenta = IdVenta,
+                IdCliente = venta?.IdCliente,
+                Monto = montoAbonar,
+                TipoPago = tipoPago,
+                Observaciones = observaciones
+            };
+
+            var respuesta = await VentaService.RegistrarPago(pagoDto);
+
+            if (respuesta != null)
+            {
+                Navigation.NavigateTo("/ventas");
+            }
+            else
+            {
+                mensajeError = "No se pudo procesar la respuesta del servidor.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al procesar el pago: {ex.Message}";
+        }
+        finally
+        {
+            procesando = false;
+        }
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/ventas");
+    }
+
+}

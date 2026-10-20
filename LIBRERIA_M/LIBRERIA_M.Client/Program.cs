@@ -12,6 +12,9 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<ProductoService>();
 builder.Services.AddScoped<CompraService>();
-builder.Services.AddScoped<ProveedorService>(); // <-- REGISTRO DE PROVEEDOR SERVICE
+builder.Services.AddScoped<ProveedorService>(); 
+builder.Services.AddScoped<VentaService>();
+builder.Services.AddScoped<PedidoService>();
+builder.Services.AddScoped<PanelControlService>();
 
 await builder.Build().RunAsync();

@@ -1,0 +1,416 @@
+﻿@page "/pedidos/nuevo"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using global::LIBRERIA_M.Client.Services
+@using LIBRERIA_M.Client.Models.Stock
+@using LIBRERIA_M.Client.Models.Pedidos
+@using System.Globalization
+
+@inject PedidoService PedidoService
+@inject ClienteService ClienteService
+@inject ProductoService ProductoService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Nuevo Pedido - Librería</PageTitle>
+
+<div class="page-container">
+
+    <h2 class="titulo-modulo">
+        PEDIDOS (NUEVO)
+    </h2>
+
+    <div class="toolbar-volver">
+        <button class="btn-volver" @onclick="Volver">
+            <i class="fa-solid fa-arrow-left"></i> VOLVER AL LISTADO PEDIDOS
+        </button>
+    </div>
+
+    <div class="card-principal">
+
+        <EditForm Model="nuevoPedido" OnValidSubmit="GuardarPedido">
+            <DataAnnotationsValidator />
+
+            <!-- ========================================== -->
+            <!-- CAMPOS SUPERIORES DEL FORMULARIO -->
+            <!-- ========================================== -->
+            <div class="grid-formulario">
+
+                <!-- Cliente -->
+                <div class="form-group">
+                    <label class="form-label">CLIENTE <span class="text-danger">*</span></label>
+                    <InputSelect class="input-form" @bind-Value="nuevoPedido.IdCliente" @bind-Value:after="OnClienteCambiado">
+                        <option value="0">SELECCIONAR CLIENTE...</option>
+                        @foreach (var c in clientes)
+                        {
+                            <option value="@c.IdCliente">@c.Nombre @c.Apellido</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => nuevoPedido.IdCliente" class="text-danger-msg" />
+                </div>
+
+                <!-- Origen -->
+                <div class="form-group">
+                    <label class="form-label">ORIGEN <span class="text-danger">*</span></label>
+                    <InputSelect class="input-form" @bind-Value="nuevoPedido.OrigenPedido">
+                        <option value="GMAIL">GMAIL</option>
+                        <option value="WHATSAPP">WHATSAPP</option>
+                        <option value="PRESENCIAL">PRESENCIAL</option>
+                        <option value="TELEFONO">TELEFONO</option>
+                    </InputSelect>
+                    <ValidationMessage For="() => nuevoPedido.OrigenPedido" class="text-danger-msg" />
+                </div>
+
+                <!-- N° Pedido (Autogenerado o informativo) -->
+                <div class="form-group">
+                    <label class="form-label">N°PEDIDO <span class="text-danger">*</span></label>
+                    <input class="input-form input-disabled" value="AUTOGENERADO" disabled />
+                </div>
+
+                <!-- Fecha Pedido -->
+                <div class="form-group">
+                    <label class="form-label">FECHA <span class="text-danger">*</span></label>
+                    <input type="date" class="input-form" value="@fechaCreacion.ToString("yyyy-MM-dd")" disabled />
+                </div>
+
+                <!-- Fecha de Entrega -->
+                <div class="form-group">
+                    <label class="form-label">FECHA DE ENTREGA <span class="text-danger">*</span></label>
+                    <InputDate class="input-form" @bind-Value="nuevoPedido.FechaEntrega" />
+                </div>
+
+                <!-- Estado (Badge Informativo) -->
+                <div class="form-group">
+                    <label class="form-label">ESTADO</label>
+                    <div class="badge-contenedor">
+                        <span class="estado-sinstock">PENDIENTE</span>
+                    </div>
+                </div>
+
+                <!-- Detalle Pedido / Observaciones -->
+                <div class="form-group span-full">
+                    <label class="form-label">DETALLE PEDIDO</label>
+                    <InputTextArea class="textarea-form"
+                                   placeholder="ESCRIBIR DETALLE DEL PEDIDO..."
+                                   @bind-Value="nuevoPedido.Observaciones" />
+                    <ValidationMessage For="() => nuevoPedido.Observaciones" class="text-danger-msg" />
+                </div>
+
+            </div>
+
+            <!-- ========================================== -->
+            <!-- SECCIÓN PRODUCTOS Y RESUMEN -->
+            <!-- ========================================== -->
+            <div class="seccion-inferior-grid mt-4">
+
+                <!-- Columna Izquierda: Productos -->
+                <div class="bloque-productos">
+                    <h3 class="subtitulo-seccion">PRODUCTOS</h3>
+
+                    <div class="tabla-container">
+                        <table class="tabla-stock">
+                            <thead>
+                                <tr>
+                                    <th>PRODUCTO</th>
+                                    <th class="text-center">CANTIDAD</th>
+                                    <th class="text-right">SUBTOTAL</th>
+                                    <th class="text-right">DESCUENTO</th>
+                                    <th class="text-center">ACCION</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!listaDetallesPedido.Any())
+                                {
+                                    <tr>
+                                        <td colspan="5" class="sin-registros py-4">
+                                            NO HAY PRODUCTOS AGREGADOS
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var item in listaDetallesPedido)
+                                    {
+                                        var prod = listaProductos.FirstOrDefault(p => p.IdProducto == item.IdProducto);
+                                        var nombreProd = prod != null ? prod.Nombre : $"Prod #{item.IdProducto}";
+                                        var subtotalItem = item.Cantidad * item.PrecioUnitario;
+                                        var descuentoItem = subtotalItem * (descuentoClienteActual / 100m);
+
+                                        <tr>
+                                            <td>@nombreProd</td>
+                                            <td class="text-center">@item.Cantidad</td>
+                                            <td class="text-right">@subtotalItem.ToString("C", formatoMoneda)</td>
+                                            <td class="text-right">@descuentoItem.ToString("C", formatoMoneda)</td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn-eliminar-item" @onclick="() => QuitarItem(item)">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Fila para seleccionar y agregar nuevo producto -->
+                    <div class="bar-agregar-producto mt-3">
+
+                        <div class="select-prod-grow">
+                            <select class="input-select" @bind="idProductoSeleccionado" @bind:after="OnProductoCambiado">
+                                <option value="0">-- Seleccionar Producto --</option>
+                                @foreach (var p in listaProductos)
+                                {
+                                    <option value="@p.IdProducto">@p.Nombre ($@p.PrecioUnitario.ToString("N2"))</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="cant-prod-fix">
+                            <input type="number" class="input-text text-center" placeholder="Cant." @bind="cantidadAgregar" min="1" />
+                        </div>
+
+                        <button type="button" class="btn-agregar-prod" @onclick="AgregarItem">
+                            + AGREGAR PRODUCTO
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Resumen de Totales -->
+                <div class="bloque-resumen">
+                    <h3 class="subtitulo-seccion">RESUMEN</h3>
+
+                    <div class="card-secundaria caja-resumen">
+                        <div class="resumen-fila">
+                            <span>SUBTOTAL</span>
+                            <strong>@subtotal.ToString("C", formatoMoneda)</strong>
+                        </div>
+                        <div class="resumen-fila mt-2">
+                            <span>DESCUENTO</span>
+                            <strong>@descuento.ToString("C", formatoMoneda)</strong>
+                        </div>
+                        <hr class="linea-divisora" />
+                        <div class="resumen-fila total mt-2">
+                            <span>TOTAL</span>
+                            <strong>@total.ToString("C", formatoMoneda)</strong>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ========================================== -->
+            <!-- BOTONES DE ACCIÓN (FOOTER) -->
+            <!-- ========================================== -->
+            <div class="footer-acciones mt-4">
+                <button type="button" class="btn-cancelar" @onclick="Volver">
+                    CANCELAR
+                </button>
+
+                <button type="submit" class="btn-confirmar" disabled="@guardando">
+                    @(guardando ? "GUARDANDO..." : "CONFIRMAR")
+                </button>
+            </div>
+
+        </EditForm>
+
+    </div>
+</div>
+
+@code {
+    private CrearPedidoDTO nuevoPedido = new()
+    {
+        OrigenPedido = "GMAIL",
+        FechaEntrega = DateTime.Today.AddDays(5),
+        IdUsuario = 1
+    };
+
+    private List<ClienteDto> clientes = new();
+    private List<ProductoDto> listaProductos = new();
+
+    private List<ItemDetallePedidoModel> listaDetallesPedido = new();
+
+    private int idProductoSeleccionado = 0;
+    private int cantidadAgregar = 1;
+    private decimal precioUnitarioAgregar = 0;
+    private decimal descuentoClienteActual = 0;
+
+    private DateTime fechaCreacion = DateTime.Today;
+    private bool guardando = false;
+
+    private decimal subtotal = 0m;
+    private decimal descuento = 0m;
+    private decimal total = 0m;
+
+    private readonly CultureInfo formatoMoneda = new CultureInfo("es-AR")
+    {
+        NumberFormat = new NumberFormatInfo
+        {
+            CurrencySymbol = "$",
+            CurrencyPositivePattern = 0,
+            CurrencyNegativePattern = 8,
+            CurrencyGroupSeparator = ".",
+            CurrencyDecimalSeparator = ","
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarClientes();
+        await CargarProductos();
+    }
+
+    private async Task CargarClientes()
+    {
+        try
+        {
+            clientes = await ClienteService.ObtenerClientesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar la lista de clientes: {ex.Message}");
+        }
+    }
+
+    private async Task CargarProductos()
+    {
+        try
+        {
+            var productos = await ProductoService.ObtenerProductos();
+            listaProductos = productos ?? new List<ProductoDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar productos: {ex.Message}");
+        }
+    }
+
+    private void OnProductoCambiado()
+    {
+        var prod = listaProductos.FirstOrDefault(p => p.IdProducto == idProductoSeleccionado);
+        if (prod != null)
+        {
+            precioUnitarioAgregar = prod.PrecioUnitario;
+        }
+    }
+
+    private void OnClienteCambiado()
+    {
+        var cliente = clientes.FirstOrDefault(c => c.IdCliente == nuevoPedido.IdCliente);
+        descuentoClienteActual = (cliente != null && cliente.TipoCliente == "Particular")
+            ? cliente.PorcentajeDescuento
+            : 0;
+
+        CalcularTotales();
+    }
+
+    private void AgregarItem()
+    {
+        if (idProductoSeleccionado <= 0)
+        {
+            JS.InvokeVoidAsync("alert", "Por favor seleccione un producto válido.");
+            return;
+        }
+
+        if (cantidadAgregar <= 0)
+        {
+            JS.InvokeVoidAsync("alert", "La cantidad debe ser mayor a cero.");
+            return;
+        }
+
+        var prod = listaProductos.FirstOrDefault(p => p.IdProducto == idProductoSeleccionado);
+        var precio = prod != null ? prod.PrecioUnitario : precioUnitarioAgregar;
+
+        var itemExistente = listaDetallesPedido.FirstOrDefault(i => i.IdProducto == idProductoSeleccionado);
+        if (itemExistente != null)
+        {
+            itemExistente.Cantidad += cantidadAgregar;
+        }
+        else
+        {
+            listaDetallesPedido.Add(new ItemDetallePedidoModel
+            {
+                IdProducto = idProductoSeleccionado,
+                Cantidad = cantidadAgregar,
+                PrecioUnitario = precio
+            });
+        }
+
+        idProductoSeleccionado = 0;
+        cantidadAgregar = 1;
+        precioUnitarioAgregar = 0;
+
+        CalcularTotales();
+    }
+
+    private void QuitarItem(ItemDetallePedidoModel item)
+    {
+        listaDetallesPedido.Remove(item);
+        CalcularTotales();
+    }
+
+    private void CalcularTotales()
+    {
+        subtotal = listaDetallesPedido.Sum(i => i.Cantidad * i.PrecioUnitario);
+        descuento = subtotal * (descuentoClienteActual / 100m);
+        total = subtotal - descuento;
+    }
+
+    private async Task GuardarPedido()
+    {
+        if (nuevoPedido.IdCliente <= 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Por favor, seleccione un cliente válido.");
+            return;
+        }
+
+        if (!listaDetallesPedido.Any())
+        {
+            await JS.InvokeVoidAsync("alert", "Debe agregar al menos un producto al pedido.");
+            return;
+        }
+
+        guardando = true;
+        try
+        {
+            // Mapear los ítems cargados dinámicamente a la lista de detalles del DTO
+            nuevoPedido.Detalles = listaDetallesPedido.Select(i => new AgregarDetallePedidoDTO
+            {
+                IdProducto = i.IdProducto,
+                Cantidad = i.Cantidad
+            }).ToList();
+
+            var response = await PedidoService.InsertarPedido(nuevoPedido);
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/pedidos");
+            }
+            else
+            {
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Error al crear el pedido: {errorMsg}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Ocurrió un error inesperado: {ex.Message}");
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/pedidos");
+    }
+
+    public class ItemDetallePedidoModel
+    {
+        public int IdProducto { get; set; }
+        public int Cantidad { get; set; }
+        public decimal PrecioUnitario { get; set; }
+    }
+}

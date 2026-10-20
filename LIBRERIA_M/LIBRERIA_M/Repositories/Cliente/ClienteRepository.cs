@@ -15,7 +15,7 @@ namespace LIBRERIA_M.Repositories.Cliente
         }
 
         // ==========================================
-        // 1. LISTADOS Y FILTROS (Figma: Listado)
+        // 1. LISTADOS Y FILTROS
         // ==========================================
 
         public async Task<IEnumerable<ClienteDto>> ListarClientesAsync()
@@ -70,7 +70,7 @@ namespace LIBRERIA_M.Repositories.Cliente
         }
 
         // ==========================================
-        // 2. ESCRITURA Y ESTADO (Figma: Formulario)
+        // 2. ESCRITURA Y ESTADO
         // ==========================================
 
         public async Task CrearClienteAsync(ClienteDto cliente)
@@ -137,7 +137,7 @@ namespace LIBRERIA_M.Repositories.Cliente
         }
 
         // ==========================================
-        // 3. RESUMEN E HISTORIALES (Figma: Detalles)
+        // 3. RESUMEN, HISTORIALES Y PAGOS
         // ==========================================
 
         public async Task<ClienteResumenDto?> ObtenerResumenClienteAsync(int idCliente)
@@ -168,6 +168,38 @@ namespace LIBRERIA_M.Repositories.Cliente
                 "sp_HistorialPagosCliente",
                 new { IdCliente = idCliente },
                 commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<(bool Exito, string Mensaje)> RegistrarPagoAsync(RegistrarPagoClienteDto pagoDto)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            var resultado = await connection.QueryFirstOrDefaultAsync<dynamic>(
+                "sp_RegistrarPagoVenta",
+                new
+                {
+                    pagoDto.IdCliente,
+                    pagoDto.Monto,
+                    pagoDto.TipoPago,
+                    pagoDto.Observaciones,
+                    pagoDto.IdUsuario,
+                    pagoDto.FechaPago,
+                    pagoDto.IdVenta
+                },
+                commandType: CommandType.StoredProcedure);
+
+            if (resultado != null)
+            {
+                // CAMBIO: el SP devuelve Exito como BIT (bool en C#). El cast anterior
+                // (int)(resultado.Exito ?? 0) no convierte un bool a int, asi que se lee
+                // el valor como object y se convierte de forma segura (acepta bool o int).
+                object? valorExito = resultado.Exito;
+                bool exito = valorExito != null && Convert.ToBoolean(valorExito);
+                string mensaje = (string)(resultado.Mensaje ?? string.Empty);
+                return (exito, mensaje);
+            }
+
+            return (false, "Error no especificado al registrar el pago.");
         }
     }
 }

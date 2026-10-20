@@ -13,10 +13,4 @@
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.7" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Folder Include="Pages\Estadisticas\" />
-		<Folder Include="Pages\PanelControl\" />
-		<Folder Include="Pages\Pedidos\" />
-	</ItemGroup>
-
 </Project>

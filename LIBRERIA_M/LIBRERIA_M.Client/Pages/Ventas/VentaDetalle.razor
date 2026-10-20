@@ -1,0 +1,275 @@
+﻿@page "/ventas/{Id:int}"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using LIBRERIA_M.Client.Models.Ventas
+@using LIBRERIA_M.Client.Services
+@using System.Globalization
+
+@inject VentaService VentaService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Detalle de Ventas - Librería</PageTitle>
+
+<!-- Carga de html2pdf.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<div class="page-container">
+
+    <div class="header-acciones no-print">
+        <button class="btn-volver" @onclick="VolverAVentas">
+            <i class="fa-solid fa-arrow-left"></i> VOLVER A VENTAS
+        </button>
+    </div>
+
+    <div class="card-principal printable-area" id="areaFactura">
+        <div class="card-secundaria">
+
+            @if (cargando)
+            {
+                <div class="cargando-container">
+                    <p>Cargando detalles del comprobante...</p>
+                </div>
+            }
+            else if (venta == null)
+            {
+                <div class="error-container">
+                    <p>No se encontró la venta especificada o fue eliminada.</p>
+                </div>
+            }
+            else
+            {
+                <!-- ========================= -->
+                <!-- Cabecera de Comprobante -->
+                <!-- ========================= -->
+                <div class="factura-header">
+                    <div class="factura-titulo-grupo">
+                        <h2>Comprobante @venta.NumeroFactura</h2>
+                        <span class="@ObtenerClaseEstado(venta.Estado)">
+                            @venta.Estado.ToUpper()
+                        </span>
+                    </div>
+
+                    <div class="factura-acciones no-print">
+                        <button class="btn-secundario" @onclick="DescargarPDF">
+                            <i class="fa-solid fa-download"></i> DESCARGAR PDF
+                        </button>
+                        <button class="btn-secundario" @onclick="Imprimir">
+                            <i class="fa-solid fa-print"></i> IMPRIMIR
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ========================= -->
+                <!-- Cuerpo / Información y Tabla -->
+                <!-- ========================= -->
+                <div class="factura-grid">
+
+                    <!-- Columna Izquierda: Datos del Cliente y Venta -->
+                    <div class="factura-info-cliente">
+                        <div class="info-grupo">
+                            <label>CLIENTE:</label>
+                            <strong>@venta.ClienteNombre.ToUpper()</strong>
+                        </div>
+
+                        <div class="info-grupo">
+                            <label>DNI:</label>
+                            <span>@(string.IsNullOrWhiteSpace(venta.ClienteDocumento) ? "-" : venta.ClienteDocumento)</span>
+                        </div>
+
+                        <div class="info-grupo">
+                            <label>FECHA:</label>
+                            <span>@venta.FechaVenta.ToString("dd/MM/yyyy")</span>
+                        </div>
+
+                        <div class="info-grupo">
+                            <label>TIPO CLIENTE:</label>
+                            <span>@(string.IsNullOrWhiteSpace(venta.TipoCliente) ? "CONSUMIDOR FINAL" : venta.TipoCliente.ToUpper())</span>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(venta.Observaciones))
+                        {
+                            <div class="info-grupo">
+                                <label>OBSERVACIONES:</label>
+                                <span>@venta.Observaciones</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Columna Derecha: Detalle de Productos y Totales -->
+                    <div class="factura-tabla-seccion">
+
+                        <div class="tabla-container">
+                            <table class="tabla-stock">
+                                <thead>
+                                    <tr>
+                                        <th>PRODUCTO</th>
+                                        <th class="text-center">CANTIDAD</th>
+                                        <th class="text-right">PRECIO UNIDAD</th>
+                                        <th class="text-right">SUBTOTAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (venta.Detalles != null && venta.Detalles.Any())
+                                    {
+                                        @foreach (var item in venta.Detalles)
+                                        {
+                                            <tr>
+                                                <td>@item.ProductoNombre</td>
+                                                <td class="text-center">@item.Cantidad</td>
+                                                <td class="text-right">$ @item.PrecioUnitario.ToString("N2")</td>
+                                                <td class="text-right">$ @item.Subtotal.ToString("N2")</td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="4" class="sin-registros">
+                                                No hay productos detallados en esta venta.
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Panel de Totales -->
+                        <div class="factura-totales">
+                            <div class="total-fila">
+                                <span>SUBTOTAL:</span>
+                                <strong>$ @venta.TotalVenta.ToString("N2")</strong>
+                            </div>
+                            <div class="total-fila">
+                                <span>DESCUENTO:</span>
+                                <strong>$ 0,00</strong>
+                            </div>
+                            <div class="total-fila total-destacado">
+                                <span>TOTAL:</span>
+                                <strong>$ @venta.TotalVenta.ToString("N2")</strong>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private VentaDetalleCompletoDto? venta;
+    private bool cargando = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await CargarDetalleVenta();
+    }
+
+    private async Task CargarDetalleVenta()
+    {
+        cargando = true;
+        try
+        {
+            venta = await VentaService.ObtenerVentaPorId(Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al obtener detalle de venta: {ex.Message}");
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void VolverAVentas()
+    {
+        Navigation.NavigateTo("/ventas");
+    }
+
+    private async Task DescargarPDF()
+    {
+        if (venta == null) return;
+
+        var scriptJS = $@"
+            (function() {{
+                var elementoOriginal = document.getElementById('areaFactura');
+                if (!elementoOriginal) return;
+
+                // Clonar el elemento
+                var clon = elementoOriginal.cloneNode(true);
+
+                // Quitar los botones en el clon
+                var botones = clon.querySelector('.factura-acciones');
+                if (botones) botones.remove();
+
+                // Contenedor temporal exacto para A4 con margen de 8mm
+                var contenedorTemporal = document.createElement('div');
+                contenedorTemporal.style.position = 'fixed';
+                contenedorTemporal.style.left = '0px';
+                contenedorTemporal.style.top = '0px';
+                contenedorTemporal.style.width = '700px';
+                contenedorTemporal.style.zIndex = '-9999';
+                contenedorTemporal.style.background = '#ffffff';
+                contenedorTemporal.style.padding = '0px';
+                contenedorTemporal.style.margin = '0px';
+
+                // Clase para aislación de reglas CSS
+                clon.classList.add('contenedor-pdf-aislado');
+
+                contenedorTemporal.appendChild(clon);
+                document.body.appendChild(contenedorTemporal);
+
+                var opciones = {{
+                    margin:       [8, 8, 8, 8],
+                    filename:     'Comprobante_{venta.NumeroFactura}.pdf',
+                    image:        {{ type: 'jpeg', quality: 0.98 }},
+                    html2canvas:  {{ 
+                        scale: 2, 
+                        useCORS: true,
+                        x: 0,
+                        y: 0,
+                        scrollX: 0,
+                        scrollY: 0,
+                        width: 700,
+                        windowWidth: 700
+                    }},
+                    jsPDF:        {{ unit: 'mm', format: 'a4', orientation: 'portrait' }}
+                }};
+
+                html2pdf().set(opciones).from(clon).save().then(function() {{
+                    document.body.removeChild(contenedorTemporal);
+                }}).catch(function(err) {{
+                    if (document.body.contains(contenedorTemporal)) {{
+                        document.body.removeChild(contenedorTemporal);
+                    }}
+                    console.error('Error al generar PDF:', err);
+                }});
+            }})();
+        ";
+
+        await JS.InvokeVoidAsync("eval", scriptJS);
+    }
+
+    private async Task Imprimir()
+    {
+        await JS.InvokeVoidAsync("window.print");
+    }
+
+    private string ObtenerClaseEstado(string estado)
+    {
+        return estado switch
+        {
+            "Pagada" => "badge-estado estado-pagada",
+            "ConDeuda" => "badge-estado estado-deuda",
+            "Pendiente" => "badge-estado estado-pendiente",
+            _ => "badge-estado"
+        };
+    }
+}

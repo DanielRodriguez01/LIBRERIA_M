@@ -1,0 +1,612 @@
+﻿/* ==========================================
+   ESTRUCTURA GENERAL Y CONTENEDORES
+   ========================================== */
+.page-container {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #334155;
+}
+
+.titulo-modulo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1.25rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.card-principal {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.card-secundaria {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ==========================================
+   ALERTAS Y MENSAJES
+   ========================================== */
+.alert-error {
+    background-color: #fef2f2;
+    border-left: 4px solid #ef4444;
+    color: #991b1b;
+    padding: 1rem 1.25rem;
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+
+.btn-cerrar-alert {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: #991b1b;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.alert-info {
+    background-color: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    color: #1e40af;
+    padding: 1rem 1.25rem;
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+
+/* ==========================================
+   SECCIÓN CABECERA (DATOS DE VENTA)
+   ========================================== */
+.seccion-cabecera {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.25rem;
+}
+
+.grid-tres-columnas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.campo-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.label-with-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.form-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.05em;
+}
+
+.btn-link-accion {
+    background: none;
+    border: none;
+    color: #2563eb;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+    .btn-link-accion:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+    }
+
+/* INPUTS Y SELECTS DE FORMULARIO */
+.input-select,
+.input-text {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #1e293b;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+    .input-select:focus,
+    .input-text:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+/* ==========================================
+   FORMAS DE PAGO MODULAR
+   ========================================== */
+.seccion-formas-pago {
+    border-top: 1px solid #f1f5f9;
+    padding-top: 1.25rem;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.grid-pagos-header {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 60px;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+    padding: 0 0.25rem;
+}
+
+.grid-pagos-fila {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 60px;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.input-monto-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.prefix-moneda {
+    position: absolute;
+    left: 0.75rem;
+    color: #64748b;
+    font-size: 0.875rem;
+    pointer-events: none;
+}
+
+.input-monto-wrapper .input-text {
+    padding-left: 1.75rem;
+}
+
+.btn-eliminar-pago {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #ef4444;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+    .btn-eliminar-pago:hover {
+        background: #fee2e2;
+    }
+
+/* ==========================================
+   GRID SECUNDARIA: PRODUCTOS Y RESUMEN
+   ========================================== */
+.grid-productos-resumen {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.5rem;
+}
+
+@media (max-width: 992px) {
+    .grid-productos-resumen {
+        grid-template-columns: 1fr;
+    }
+}
+
+.subtitulo-seccion {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+/* ==========================================
+   TABLA DE PRODUCTOS
+   ========================================== */
+.columna-productos {
+    display: flex;
+    flex-direction: column;
+}
+
+.tabla-container {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+    min-height: 200px;
+}
+
+.tabla-stock {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+    .tabla-stock th {
+        background-color: #f8fafc;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .tabla-stock td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+    }
+
+    .tabla-stock tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+.sin-registros {
+    text-align: center;
+    color: #94a3b8;
+    padding: 2.5rem 1rem !important;
+    font-style: italic;
+}
+
+.btn-eliminar-item {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+    .btn-eliminar-item:hover {
+        background-color: #fef2f2;
+    }
+
+/* BARRA DE AGREGAR PRODUCTO */
+.bar-agregar-producto {
+    display: flex;
+    gap: 0.75rem;
+    background-color: #ffffff;
+    padding: 0.875rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    align-items: center;
+}
+
+.input-prod-grow {
+    flex: 1;
+}
+
+.cant-prod-fix {
+    width: 90px;
+}
+
+.btn-agregar-prod {
+    background-color: #0f172a;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.625rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s;
+}
+
+    .btn-agregar-prod:hover {
+        background-color: #1e293b;
+    }
+
+/* ==========================================
+   TARJETA DE RESUMEN Y TOTALES
+   ========================================== */
+.card-resumen {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+}
+
+.titulo-resumen {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 0.5rem;
+    margin: 0;
+}
+
+.resumen-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+    .resumen-fila strong {
+        color: #1e293b;
+    }
+
+.fila-total {
+    border-top: 1px dashed #cbd5e1;
+    border-bottom: 1px dashed #cbd5e1;
+    padding: 0.75rem 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+    .fila-total strong {
+        color: #2563eb;
+        font-size: 1.25rem;
+    }
+
+.fila-pagado strong {
+    color: #16a34a;
+}
+
+.fila-saldo strong {
+    color: #dc2626;
+}
+
+.fila-cambio strong {
+    color: #0284c7;
+    font-size: 1rem;
+}
+
+/* BOTÓN FINALIZAR VENTA */
+.btn-finalizar-venta {
+    width: 100%;
+    background-color: #16a34a;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.875rem 1rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+    .btn-finalizar-venta:hover:not(:disabled) {
+        background-color: #15803d;
+    }
+
+    .btn-finalizar-venta:disabled {
+        background-color: #cbd5e1;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+/* UTILIDADES Y ALINEACIÓN */
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+/* BADGES DE COMPROBANTES */
+.badge-comprobante {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.badge-factura-a {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.badge-factura-b {
+    background-color: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+}
+
+.badge-presupuesto {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+}
+
+/* ==========================================
+   MODAL DE ALTA RÁPIDA (NUEVO CLIENTE)
+   ========================================== */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-contenido {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+.modal-cliente-custom {
+    max-width: 650px;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-cabecera {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8fafc;
+}
+
+    .modal-cabecera h3 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #1e293b;
+        letter-spacing: 0.02em;
+    }
+
+.btn-cerrar-modal {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #64748b;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+    .btn-cerrar-modal:hover {
+        color: #0f172a;
+    }
+
+.modal-cuerpo {
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+/* CUADRÍCULA DE 2 COLUMNAS PARA EL FORMULARIO DEL MODAL */
+.grid-dos-columnas-modal {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem 1rem;
+}
+
+@media (max-width: 640px) {
+    .grid-dos-columnas-modal {
+        grid-template-columns: 1fr;
+    }
+}
+
+.modal-pie {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    background-color: #f8fafc;
+}
+
+.btn-cancelar {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 0.625rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+    .btn-cancelar:hover:not(:disabled) {
+        background-color: #f1f5f9;
+        border-color: #94a3b8;
+    }
+
+.btn-guardar {
+    background-color: #0f172a;
+    border: none;
+    color: #ffffff;
+    padding: 0.625rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+    .btn-guardar:hover:not(:disabled) {
+        background-color: #1e293b;
+    }
+
+    .btn-guardar:disabled,
+    .btn-cancelar:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }

@@ -95,6 +95,12 @@ namespace LIBRERIA_M.Client.Services
             return pagos ?? new List<ClienteHistorialPagoDto>();
         }
 
+        public async Task RegistrarPagoClienteAsync(RegistrarPagoClienteDto pago)
+        {
+            var response = await _http.PostAsJsonAsync($"api/clientes/{pago.IdCliente}/pagos", pago);
+            await ProcesarRespuestaError(response);
+        }
+
         // ==========================================
         // MANEJO DE ERRORES DE LA API (THROW SQL)
         // ==========================================

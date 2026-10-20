@@ -1,0 +1,402 @@
+﻿/* ==========================================
+   CONTENEDOR GENERAL Y TÍTULO
+========================================== */
+.page-container {
+    padding: 35px;
+    background: #F5F5F5;
+    min-height: 100vh;
+}
+
+.titulo-modulo {
+    font-size: 34px;
+    font-weight: bold;
+    color: #222;
+    margin-bottom: 25px;
+}
+
+/* ==========================================
+   TARJETAS
+========================================== */
+.card-principal {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+}
+
+.card-secundaria {
+    background: #F8F8F8;
+    border-radius: 15px;
+    padding: 25px;
+}
+
+/* ==========================================
+   TOOLBAR Y BÚSQUEDA
+========================================== */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.input-busqueda {
+    flex: 1;
+    height: 48px;
+    border-radius: 10px;
+    border: 1px solid #D8D8D8;
+    padding: 0 18px;
+    font-size: 15px;
+    background: white;
+    transition: .2s;
+}
+
+    .input-busqueda:focus {
+        outline: none;
+        border-color: #3A86FF;
+        box-shadow: 0 0 5px rgba(58, 134, 255, .25);
+    }
+
+.btn-principal {
+    background: #3A86FF;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .20s;
+    white-space: nowrap;
+}
+
+    .btn-principal:hover {
+        background: #2569D6;
+    }
+
+/* ==========================================
+   FILTROS DE ESTADO
+========================================== */
+.filtros {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+.titulo-filtro {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+.grupo-filtros {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-filtro {
+    border: none;
+    background: #EAEAEA;
+    color: #444;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .25s;
+}
+
+    .btn-filtro:hover {
+        background: #D9D9D9;
+    }
+
+/* Clases de filtro activo */
+.filtro-todos {
+    background: #1E3AF3;
+    color: white;
+}
+
+    .filtro-todos:hover {
+        background: #1632D8;
+    }
+
+.filtro-pagado {
+    background-color: #93F26C;
+    color: #1b5e20;
+}
+
+    .filtro-pagado:hover {
+        background-color: #7ee055;
+    }
+
+.filtro-stockbajo {
+    background-color: #FFD56B;
+    color: #C26300;
+}
+
+    .filtro-stockbajo:hover {
+        background-color: #F7CB61;
+    }
+
+.filtro-sinstock {
+    background: #F6C1C1;
+    color: #D70000;
+}
+
+    .filtro-sinstock:hover {
+        background: #F4AAAA;
+    }
+
+/* ==========================================
+   TABLA DE VENTAS
+========================================== */
+.tabla-container {
+    width: 100%;
+    overflow-x: auto; /* Mantiene cualquier scroll dentro de la tarjeta */
+}
+
+.tabla-stock {
+    width: 100%;
+    min-width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    table-layout: auto;
+}
+
+    .tabla-stock thead {
+        background: #ECECEC;
+    }
+
+    .tabla-stock th {
+        padding: 14px 12px; /* Padding incrementado para dar mayor aire a los encabezados */
+        font-weight: 700;
+        color: #444;
+        font-size: 14px;
+        vertical-align: middle;
+        white-space: normal;
+        text-align: left;
+    }
+
+        /* Anchos ajustados para las 8 columnas restantes */
+        /* 1: N° Factura */
+        .tabla-stock th:nth-child(1) {
+            width: 130px;
+        }
+        /* 2: Fecha */
+        .tabla-stock th:nth-child(2) {
+            width: 110px;
+        }
+        /* 3: Cliente */
+        .tabla-stock th:nth-child(3) {
+            min-width: 160px;
+        }
+        /* 4: Documento */
+        .tabla-stock th:nth-child(4) {
+            width: 115px;
+        }
+        /* 5: Total */
+        .tabla-stock th:nth-child(5) {
+            width: 120px;
+        }
+        /* 6: Saldo Pendiente */
+        .tabla-stock th:nth-child(6) {
+            width: 130px;
+        }
+        /* 7: Estado */
+        .tabla-stock th:nth-child(7) {
+            width: 115px;
+        }
+        /* 8: Acciones */
+        .tabla-stock th:nth-child(8) {
+            width: 85px;
+        }
+
+    .tabla-stock td {
+        padding: 14px 12px; /* Padding ajustado para celdas de datos con más holgura */
+        border-bottom: 1px solid #E5E5E5;
+        font-size: 14px;
+        color: #444;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+        /* Salto de línea adaptativo en Nombre del Cliente */
+        .tabla-stock td:nth-child(3) {
+            white-space: normal;
+            word-break: normal;
+            overflow-wrap: break-word;
+        }
+
+    .tabla-stock tbody tr:hover {
+        background: #F8F8F8;
+    }
+
+/* ==========================================
+   ALINEACIONES UTILITARIAS
+========================================== */
+.text-center {
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+/* ==========================================
+   BOTONES DE ACCIÓN Y CELDAS
+========================================== */
+.acciones-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.btn-editar {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #3B82F6;
+    font-size: 16px;
+    cursor: pointer;
+    transition: .2s;
+}
+
+    .btn-editar:hover {
+        background: #EEF5FF;
+        color: #2563EB;
+        transform: scale(1.08);
+    }
+
+/* ==========================================
+   ESTADOS Y BADGES
+========================================== */
+.estado-disponible, .estado-stockbajo, .estado-sinstock {
+    display: inline-block;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 999px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Estado: PAGADO */
+.estado-disponible {
+    background-color: #93F26C;
+    color: #1b5e20;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estado: PARCIAL */
+.estado-stockbajo {
+    background-color: #FFD56B;
+    color: #C26300;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estado: PENDIENTE */
+.estado-sinstock {
+    background-color: #FFCDD2;
+    color: #c62828;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ==========================================
+   MENSAJE SIN REGISTROS
+========================================== */
+.sin-registros {
+    text-align: center;
+    color: #777;
+    padding: 30px;
+    font-style: italic;
+}
+
+/* ==========================================
+   PAGINACIÓN
+========================================== */
+.paginacion {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 30px;
+    padding-top: 5px;
+}
+
+.btn-pagina {
+    min-width: 38px;
+    height: 38px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 8px;
+    background: #ECECEC;
+    color: #444;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .20s;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+    .btn-pagina:hover:not(:disabled) {
+        background: #D8D8D8;
+    }
+
+    .btn-pagina.activa {
+        background: #3A86FF;
+        color: white;
+        font-weight: bold;
+    }
+
+    .btn-pagina:disabled {
+        opacity: .45;
+        cursor: default;
+    }
+
+    .btn-pagina.flecha {
+        font-size: 14px;
+    }
+
+.puntos-paginacion {
+    min-width: 24px;
+    text-align: center;
+    color: #666;
+    font-weight: 600;
+    user-select: none;
+}
+
+/* ==========================================
+   RESPONSIVE / DISPOSITIVOS MÓVILES
+========================================== */
+@media (max-width: 768px) {
+    .page-container {
+        padding: 15px;
+    }
+
+    .toolbar,
+    .filtros {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .grupo-filtros {
+        flex-wrap: wrap;
+    }
+
+    .card-principal,
+    .card-secundaria {
+        padding: 15px;
+    }
+}

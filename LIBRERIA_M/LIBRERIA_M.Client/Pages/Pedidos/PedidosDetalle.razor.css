@@ -1,0 +1,564 @@
+﻿/* ==========================================
+   CONTENEDOR GENERAL Y TÍTULO
+========================================== */
+.page-container {
+    padding: 35px;
+    background: #F5F5F5;
+    min-height: 100vh;
+}
+
+.titulo-modulo {
+    font-size: 34px;
+    font-weight: bold;
+    color: #222;
+    margin-bottom: 25px;
+}
+
+/* ==========================================
+   TOOLBAR SUPERIOR Y ACCIONES DE FLUJO
+========================================== */
+.toolbar-acciones {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+
+.btn-volver {
+    background: transparent;
+    color: #1E3AF3;
+    border: none;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    transition: transform .2s ease, color .2s ease;
+}
+
+    .btn-volver:hover {
+        color: #1632D8;
+        transform: translateX(-3px);
+    }
+
+.grupo-botones-flujo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-accion {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all .2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Botón Editar Cyan */
+.btn-editar-pedido {
+    background: #00C2D1;
+    color: white;
+}
+
+    .btn-editar-pedido:hover {
+        background: #00A8B5;
+    }
+
+/* Botón Cancelar Rojo pastel */
+.btn-cancelar-pedido {
+    background: #FFCDD2;
+    color: #C62828;
+}
+
+    .btn-cancelar-pedido:hover {
+        background: #F4AAAA;
+    }
+
+/* Botones de Cambio de Estado */
+.btn-marcar-terminado {
+    background: #FFD56B;
+    color: #C26300;
+}
+
+    .btn-marcar-terminado:hover {
+        background: #F7CB61;
+    }
+
+.btn-marcar-entregado {
+    background: #4CAF50;
+    color: white;
+}
+
+    .btn-marcar-entregado:hover {
+        background: #388E3C;
+    }
+
+/* ==========================================
+   LAYOUT GRID PRINCIPAL
+========================================== */
+.grid-layout-detalle {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 25px;
+    align-items: start;
+}
+
+.columna-principal,
+.columna-secundaria {
+    display: flex;
+    flex-direction: column;
+}
+
+.grid-dos-columnas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* ==========================================
+   TARJETAS
+========================================== */
+.card-principal {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+}
+
+.subtitulo-seccion {
+    font-size: 15px;
+    font-weight: 800;
+    color: #222;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+}
+
+.subtitulo-seccion-flujo {
+    font-size: 15px;
+    font-weight: 800;
+    color: #222;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
+/* ==========================================
+   DATOS E INFORMACIÓN DEL PEDIDO
+========================================== */
+.lista-detalles {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.item-detalle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    border-bottom: 1px dashed #E8E8E8;
+    padding-bottom: 8px;
+}
+
+    .item-detalle .label {
+        font-weight: 700;
+        color: #555;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .item-detalle .valor {
+        color: #222;
+        font-weight: 800;
+    }
+
+.caja-detalle-texto {
+    background: #F8F8F8;
+    border-radius: 10px;
+    padding: 14px;
+    border: 1px solid #E8E8E8;
+}
+
+.label-box {
+    font-size: 12px;
+    font-weight: 800;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ==========================================
+   FLUJO DEL PEDIDO (STEPPER Visual)
+========================================== */
+.stepper-contenedor {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    text-align: center;
+}
+
+.paso-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.circulo-paso {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+    margin-bottom: 8px;
+    background: #E5E5E5;
+    color: #777;
+    transition: all .2s ease;
+}
+
+.paso-titulo {
+    font-size: 11px;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.paso-desc {
+    font-size: 10px;
+    color: #666;
+    line-height: 1.2;
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Variaciones del Stepper */
+.titulo-pendiente {
+    color: #D70000;
+}
+
+.titulo-terminado {
+    color: #C26300;
+}
+
+.titulo-entregado {
+    color: #1B5E20;
+}
+
+.titulo-cancelado {
+    color: #616161;
+}
+
+.paso-activo .circulo-paso {
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.paso-item:nth-child(1).paso-activo .circulo-paso {
+    background: #D70000;
+    color: white;
+}
+
+.paso-item:nth-child(2).paso-activo .circulo-paso {
+    background: #FFD56B;
+    color: #C26300;
+}
+
+.paso-item:nth-child(3).paso-activo .circulo-paso {
+    background: #93F26C;
+    color: #1B5E20;
+}
+
+.paso-item:nth-child(4).paso-activo.paso-cancelado .circulo-paso {
+    background: #B0BEC5;
+    color: white;
+}
+
+.paso-desactivado {
+    opacity: 0.4;
+}
+
+.banner-alerta-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #EEF5FF;
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+    .banner-alerta-info p {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 700;
+        color: #1E3AF3;
+        line-height: 1.3;
+    }
+
+.icon-info-blue {
+    color: #1E3AF3;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+/* ==========================================
+   TABLA DE PRODUCTOS
+========================================== */
+.tabla-container {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #E5E5E5;
+}
+
+.tabla-stock {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+    .tabla-stock thead {
+        background: #ECECEC;
+    }
+
+    .tabla-stock th {
+        padding: 12px;
+        font-weight: 700;
+        color: #444;
+        font-size: 13px;
+        vertical-align: middle;
+    }
+
+    .tabla-stock td {
+        padding: 12px;
+        border-bottom: 1px solid #E5E5E5;
+        font-size: 13px;
+        color: #444;
+        vertical-align: middle;
+    }
+
+.sin-registros {
+    text-align: center;
+    color: #777;
+    padding: 25px;
+    font-style: italic;
+    font-size: 13px;
+}
+
+.btn-cyan {
+    background: #00C2D1;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+    .btn-cyan:hover {
+        background: #00A8B5;
+    }
+
+/* ==========================================
+   OBSERVACIONES
+========================================== */
+.caja-observaciones {
+    background: #F8F8F8;
+    border-radius: 10px;
+    padding: 14px 18px;
+    border: 1px solid #E8E8E8;
+}
+
+    .caja-observaciones p {
+        margin: 0;
+        font-size: 13px;
+        color: #444;
+        font-weight: 600;
+    }
+
+/* ==========================================
+   RESUMEN
+========================================== */
+.caja-resumen {
+    display: flex;
+    flex-direction: column;
+}
+
+.resumen-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #444;
+    font-weight: 700;
+}
+
+.linea-divisora {
+    border: 0;
+    border-top: 1px solid #E5E5E5;
+    margin: 12px 0;
+}
+
+.resumen-fila.total {
+    font-size: 15px;
+    font-weight: 800;
+    color: #222;
+}
+
+/* ==========================================
+   HISTORIAL DE ESTADOS (TIMELINE)
+========================================== */
+.timeline-historial {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-left: 6px;
+}
+
+.item-timeline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.punto-timeline {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+    .punto-timeline.rojo {
+        background: #D70000;
+    }
+
+    .punto-timeline.gris {
+        background: #D1D1D1;
+    }
+
+.contenido-timeline span {
+    font-size: 12px;
+    color: #444;
+    font-weight: 700;
+}
+
+/* ==========================================
+   BADGES DE ESTADO
+========================================== */
+.estado-disponible, .estado-stockbajo, .estado-sinstock, .estado-cancelado {
+    display: inline-block;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 999px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.estado-sinstock {
+    background-color: #FFCDD2;
+    color: #C62828;
+}
+
+.estado-stockbajo {
+    background-color: #FFD56B;
+    color: #C26300;
+}
+
+.estado-disponible {
+    background-color: #93F26C;
+    color: #1B5E20;
+}
+
+.estado-cancelado {
+    background-color: #E0E0E0;
+    color: #616161;
+}
+
+/* ==========================================
+   UTILITARIOS DE MARGEN Y ALINEACIÓN
+========================================== */
+.mt-2 {
+    margin-top: 8px;
+}
+
+.mt-3 {
+    margin-top: 16px;
+}
+
+.mt-4 {
+    margin-top: 24px;
+}
+
+.py-4 {
+    padding-top: 24px;
+    padding-bottom: 24px;
+}
+
+.py-5 {
+    padding-top: 40px;
+    padding-bottom: 40px;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.fw-bold {
+    font-weight: bold !important;
+}
+
+/* ==========================================
+   RESPONSIVE
+========================================== */
+@media (max-width: 1100px) {
+    .grid-layout-detalle {
+        grid-template-columns: 1fr;
+    }
+
+    .grid-dos-columnas {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .page-container {
+        padding: 15px;
+    }
+
+    .stepper-contenedor {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .toolbar-acciones {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .grupo-botones-flujo {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-accion {
+        width: 100%;
+        justify-content: center;
+    }
+}

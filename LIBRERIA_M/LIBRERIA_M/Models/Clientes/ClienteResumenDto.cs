@@ -5,7 +5,6 @@
         public int IdCliente { get; set; }
         public decimal TotalComprado { get; set; }
         public decimal SaldoPendiente { get; set; }
-        public string EstadoFinanciero { get; set; } = string.Empty; // 'ConDeuda' o 'AlDia'
-
+        public string EstadoFinanciero { get; set; } = string.Empty; // 'CON DEUDA' o 'AL DIA'
     }
 }
