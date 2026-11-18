@@ -11,16 +11,18 @@ namespace LIBRERIA_M.Repositories.Pedido
         Task<IEnumerable<LIBRERIA_M.Models.Pedidos.PedidoDTO>> ListarPedidosPendientesPanel(int cantidad = 10);
         Task<LIBRERIA_M.Models.Pedidos.PedidoDTO?> ObtenerPorId(int idPedido);
         Task<IEnumerable<LIBRERIA_M.Models.Pedidos.DetallePedidoDTO>> ListarDetallePedido(int idPedido);
+        Task<IEnumerable<LIBRERIA_M.Models.Pedidos.HistorialPedidoDTO>> ListarHistorialPedido(int idPedido);
 
         // Operaciones de Escritura
         Task<int> InsertarPedido(LIBRERIA_M.Models.Pedidos.CrearPedidoDTO dto);
         Task InsertarDetallePedido(LIBRERIA_M.Models.Pedidos.AgregarDetallePedidoDTO dto);
         Task ActualizarPedido(LIBRERIA_M.Models.Pedidos.ActualizarPedidoDTO dto);
+        Task ActualizarEntregaPedido(int idPedido, LIBRERIA_M.Models.Pedidos.ActualizarEntregaPedidoDTO dto);
         Task EliminarDetallePedido(int idDetallePedido);
 
         // Flujo de Estados
         Task TerminarPedido(int idPedido);
-        Task EntregarPedido(int idPedido);
+        Task<LIBRERIA_M.Models.Pedidos.ResultadoEntregaPedidoDTO?> EntregarPedido(int idPedido, LIBRERIA_M.Models.Pedidos.EntregarPedidoDTO dto);
         Task CancelarPedido(int idPedido);
     }
 }

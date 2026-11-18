@@ -65,6 +65,11 @@
     gap: 8px;
 }
 
+    .btn-accion:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+
 /* Botón Editar Cyan */
 .btn-editar-pedido {
     background: #00C2D1;
@@ -100,7 +105,7 @@
     color: white;
 }
 
-    .btn-marcar-entregado:hover {
+    .btn-marcar-entregado:hover:not(:disabled) {
         background: #388E3C;
     }
 
@@ -114,8 +119,7 @@
     align-items: start;
 }
 
-.columna-principal,
-.columna-secundaria {
+.columna-principal, .columna-secundaria {
     display: flex;
     flex-direction: column;
 }
@@ -153,6 +157,33 @@
 }
 
 /* ==========================================
+   AVISO DE ÉXITO (después de entregar)
+========================================== */
+.banner-exito {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: #E8F5E9;
+    color: #1B5E20;
+    border: 1px solid #A5D6A7;
+    border-radius: 12px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.banner-exito-cerrar {
+    background: transparent;
+    border: none;
+    color: #1B5E20;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+/* ==========================================
    DATOS E INFORMACIÓN DEL PEDIDO
 ========================================== */
 .lista-detalles {
@@ -181,6 +212,13 @@
     .item-detalle .valor {
         color: #222;
         font-weight: 800;
+    }
+
+    /* Dirección de entrega: puede ser larga, se alinea a la derecha y baja de renglón */
+    .item-detalle .valor-direccion {
+        text-align: right;
+        max-width: 60%;
+        overflow-wrap: anywhere;
     }
 
 .caja-detalle-texto {
@@ -418,6 +456,14 @@
     color: #222;
 }
 
+.texto-verde {
+    color: #1B5E20;
+}
+
+.texto-rojo {
+    color: #C62828;
+}
+
 /* ==========================================
    HISTORIAL DE ESTADOS (TIMELINE)
 ========================================== */
@@ -430,7 +476,7 @@
 
 .item-timeline {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
 }
 
@@ -439,20 +485,50 @@
     height: 14px;
     border-radius: 50%;
     flex-shrink: 0;
+    margin-top: 2px;
 }
 
     .punto-timeline.rojo {
         background: #D70000;
     }
 
+    .punto-timeline.amarillo {
+        background: #FFB300;
+    }
+
+    .punto-timeline.verde {
+        background: #4CAF50;
+    }
+
+    .punto-timeline.gris-oscuro {
+        background: #757575;
+    }
+
     .punto-timeline.gris {
         background: #D1D1D1;
     }
 
-.contenido-timeline span {
-    font-size: 12px;
-    color: #444;
-    font-weight: 700;
+.contenido-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+    .contenido-timeline span {
+        font-size: 12px;
+        color: #444;
+        font-weight: 700;
+    }
+
+.detalle-timeline {
+    font-size: 11px;
+    color: #666;
+    font-weight: 600;
+}
+
+.paso-pendiente-texto {
+    color: #9E9E9E !important;
+    font-weight: 600 !important;
 }
 
 /* ==========================================
@@ -487,6 +563,278 @@
     background-color: #E0E0E0;
     color: #616161;
 }
+
+/* ==========================================
+   MODAL: REGISTRAR VENTA Y ENTREGAR PEDIDO / CONFIRMACIONES
+========================================== */
+.entrega-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 2000;
+}
+
+.entrega-modal {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 760px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.entrega-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #E5E5E5;
+}
+
+    .entrega-cabecera h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+        color: #222;
+    }
+
+.entrega-cerrar {
+    background: transparent;
+    border: none;
+    font-size: 26px;
+    line-height: 1;
+    color: #777;
+    cursor: pointer;
+}
+
+    .entrega-cerrar:hover:not(:disabled) {
+        color: #222;
+    }
+
+.entrega-cuerpo {
+    padding: 20px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.entrega-datos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    background: #F8F8F8;
+    border: 1px solid #E8E8E8;
+    border-radius: 12px;
+    padding: 14px 16px;
+}
+
+.entrega-dato {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+    .entrega-dato span {
+        font-size: 11px;
+        font-weight: 800;
+        color: #777;
+    }
+
+    .entrega-dato strong {
+        font-size: 14px;
+        color: #222;
+        font-weight: 800;
+    }
+
+.entrega-subtitulo {
+    margin: 4px 0 0;
+    font-size: 13px;
+    font-weight: 800;
+    color: #222;
+    text-transform: uppercase;
+}
+
+.entrega-pagos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.entrega-campo-monto label {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    color: #555;
+    margin-bottom: 6px;
+}
+
+.entrega-input-monto {
+    display: flex;
+    align-items: center;
+    border: 1px solid #D5D5D5;
+    border-radius: 10px;
+    background: white;
+    overflow: hidden;
+}
+
+    .entrega-input-monto:focus-within {
+        border-color: #4CAF50;
+        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    .entrega-input-monto span {
+        padding: 0 12px;
+        color: #777;
+        font-weight: 800;
+        background: #F5F5F5;
+        align-self: stretch;
+        display: flex;
+        align-items: center;
+    }
+
+    .entrega-input-monto input {
+        flex: 1;
+        border: none;
+        outline: none;
+        padding: 11px 12px;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: right;
+        min-width: 0;
+    }
+
+.entrega-resumen {
+    background: #F8F8F8;
+    border: 1px solid #E8E8E8;
+    border-radius: 12px;
+    padding: 14px 18px;
+}
+
+.entrega-cartel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #444;
+}
+
+.entrega-alerta-error {
+    background: #FFEBEE;
+    color: #C62828;
+    border: 1px solid #FFCDD2;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.entrega-pie {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #E5E5E5;
+}
+
+.btn-modal-cancelar {
+    background: #E5E5E5;
+    color: #444;
+}
+
+    .btn-modal-cancelar:hover:not(:disabled) {
+        background: #D5D5D5;
+    }
+
+/* ==========================================
+   MODALIDAD DE ENTREGA (RETIRA EN LOCAL / ENVIAR PEDIDO)
+========================================== */
+.opciones-modalidad {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.opcion-modalidad {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border: 1px solid #D8D8D8;
+    border-radius: 10px;
+    background: #F8F8F8;
+    font-size: 13px;
+    font-weight: 800;
+    color: #333;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+
+    .opcion-modalidad input[type="radio"] {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: #1E3AF3;
+        cursor: pointer;
+    }
+
+    .opcion-modalidad:hover {
+        border-color: #3A86FF;
+    }
+
+.opcion-modalidad-activa {
+    border-color: #1E3AF3;
+    background: #EEF5FF;
+    color: #1E3AF3;
+}
+
+.entrega-campo-texto {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.entrega-etiqueta {
+    font-size: 12px;
+    font-weight: 800;
+    color: #555;
+}
+
+.entrega-input-texto {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid #c9d6e2;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 14px;
+    color: #1f2937;
+    box-sizing: border-box;
+}
+
+    .entrega-input-texto:focus {
+        outline: none;
+        border-color: #3A86FF;
+        box-shadow: 0 0 5px rgba(58, 134, 255, .25);
+    }
+
+.entrega-fila-horario {
+    display: flex;
+    gap: 8px;
+}
+
+    .entrega-fila-horario .editar-select {
+        flex: 1;
+        min-width: 0;
+    }
 
 /* ==========================================
    UTILITARIOS DE MARGEN Y ALINEACIÓN
@@ -525,6 +873,95 @@
     font-weight: bold !important;
 }
 
+/* ===== Edición de productos del pedido ===== */
+.editar-zona {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.editar-barra {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.editar-barra-inactiva {
+    opacity: 0.55;
+}
+
+.editar-barra-producto {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.editar-select {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid #c9d6e2;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.editar-barra-cantidad {
+    flex: 0 0 90px;
+}
+
+.editar-cantidad {
+    width: 100%;
+    height: 42px;
+    padding: 0 8px;
+    border: 1px solid #c9d6e2;
+    border-radius: 8px;
+    background: #fff;
+    text-align: center;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.btn-agregar-producto-pedido {
+    flex: 0 0 auto;
+    height: 42px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 8px;
+    background: #111827;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+    .btn-agregar-producto-pedido:hover:not(:disabled) {
+        background: #1f2937;
+    }
+
+    .editar-select:disabled,
+    .editar-cantidad:disabled,
+    .btn-agregar-producto-pedido:disabled {
+        cursor: not-allowed;
+    }
+
+@media (max-width: 768px) {
+    .editar-barra {
+        flex-wrap: wrap;
+    }
+
+    .editar-barra-producto {
+        flex: 1 1 100%;
+    }
+}
+
 /* ==========================================
    RESPONSIVE
 ========================================== */
@@ -560,5 +997,14 @@
     .btn-accion {
         width: 100%;
         justify-content: center;
+    }
+
+    .entrega-datos,
+    .entrega-pagos {
+        grid-template-columns: 1fr;
+    }
+
+    .entrega-pie {
+        flex-direction: column-reverse;
     }
 }

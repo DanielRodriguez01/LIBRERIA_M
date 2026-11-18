@@ -87,6 +87,69 @@
                     </div>
                 </div>
 
+                <!-- Modalidad de entrega -->
+                <div class="form-group span-full">
+                    <label class="form-label">MODALIDAD DE ENTREGA <span class="text-danger">*</span></label>
+
+                    <div class="opciones-modalidad">
+                        <label class="opcion-modalidad @(!EsEnvio ? "opcion-modalidad-activa" : "")">
+                            <input type="radio" name="modalidadEntrega" checked="@(!EsEnvio)" @onchange="SeleccionarRetiro" />
+                            <span><i class="fa-solid fa-store"></i> RETIRA EN LOCAL</span>
+                        </label>
+
+                        <label class="opcion-modalidad @(EsEnvio ? "opcion-modalidad-activa" : "")">
+                            <input type="radio" name="modalidadEntrega" checked="@EsEnvio" @onchange="SeleccionarEnvio" />
+                            <span><i class="fa-solid fa-truck"></i> ENVIAR PEDIDO</span>
+                        </label>
+                    </div>
+
+                    @if (EsEnvio)
+                    {
+                        <div class="bloque-envio">
+
+                            <div class="bloque-envio-direccion">
+                                <label class="form-label">ENTREGAR EN:</label>
+                                <InputText class="input-form"
+                                           placeholder="Escriba la dirección a enviar el pedido"
+                                           maxlength="250"
+                                           @bind-Value="nuevoPedido.DireccionEntrega" />
+                            </div>
+
+                            <div class="bloque-envio-horario">
+                                <label class="form-label">HORARIO DE ENTREGA</label>
+                                <div class="selector-horario">
+                                    <select class="input-form" @bind="horaEntrega">
+                                        <option value="0">HORA</option>
+                                        @for (int h = 1; h <= 12; h++)
+                                        {
+                                            <option value="@h">@h</option>
+                                        }
+                                    </select>
+
+                                    <select class="input-form" @bind="minutoEntrega">
+                                        <option value="-1">MIN</option>
+                                        @foreach (var m in minutosDisponibles)
+                                        {
+                                            <option value="@m">@m.ToString("00")</option>
+                                        }
+                                    </select>
+
+                                    <select class="input-form" @bind="periodoEntrega">
+                                        <option value="AM">AM</option>
+                                        <option value="PM">PM</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(mensajeErrorEntrega))
+                        {
+                            <span class="text-danger-msg">@mensajeErrorEntrega</span>
+                        }
+                    }
+                </div>
+
                 <!-- Detalle Pedido / Observaciones -->
                 <div class="form-group span-full">
                     <label class="form-label">DETALLE PEDIDO</label>
@@ -243,6 +306,14 @@
     private decimal descuento = 0m;
     private decimal total = 0m;
 
+    // Modalidad de entrega (Retira en local / Enviar pedido)
+    private bool EsEnvio => nuevoPedido.TipoEntrega == "ENVIO";
+    private int horaEntrega = 0;        // 0 = sin elegir, 1 a 12
+    private int minutoEntrega = -1;     // -1 = sin elegir, 0 a 55
+    private string periodoEntrega = "AM";
+    private string? mensajeErrorEntrega;
+    private readonly int[] minutosDisponibles = Enumerable.Range(0, 12).Select(i => i * 5).ToArray();
+
     private readonly CultureInfo formatoMoneda = new CultureInfo("es-AR")
     {
         NumberFormat = new NumberFormatInfo
@@ -305,6 +376,32 @@
         CalcularTotales();
     }
 
+    // --- MODALIDAD DE ENTREGA ---
+    private void SeleccionarRetiro()
+    {
+        nuevoPedido.TipoEntrega = "RETIRO";
+        mensajeErrorEntrega = null;
+    }
+
+    private void SeleccionarEnvio()
+    {
+        nuevoPedido.TipoEntrega = "ENVIO";
+        mensajeErrorEntrega = null;
+    }
+
+    // Convierte hora (1-12) + minutos + AM/PM al formato de 24 horas que guarda la base
+    private TimeSpan? ConstruirHorario()
+    {
+        if (horaEntrega < 1 || horaEntrega > 12 || minutoEntrega < 0)
+            return null;
+
+        var hora24 = horaEntrega % 12;
+        if (periodoEntrega == "PM")
+            hora24 += 12;
+
+        return new TimeSpan(hora24, minutoEntrega, 0);
+    }
+
     private void AgregarItem()
     {
         if (idProductoSeleccionado <= 0)
@@ -359,10 +456,37 @@
 
     private async Task GuardarPedido()
     {
+        mensajeErrorEntrega = null;
+
         if (nuevoPedido.IdCliente <= 0)
         {
             await JS.InvokeVoidAsync("alert", "Por favor, seleccione un cliente válido.");
             return;
+        }
+
+        // Modalidad de entrega: si se envía, la dirección y el horario son obligatorios
+        if (EsEnvio)
+        {
+            if (string.IsNullOrWhiteSpace(nuevoPedido.DireccionEntrega))
+            {
+                mensajeErrorEntrega = "Escriba la dirección a enviar el pedido.";
+                return;
+            }
+
+            var horario = ConstruirHorario();
+            if (horario == null)
+            {
+                mensajeErrorEntrega = "Seleccione el horario de entrega (hora, minutos y AM/PM).";
+                return;
+            }
+
+            nuevoPedido.DireccionEntrega = nuevoPedido.DireccionEntrega.Trim();
+            nuevoPedido.HorarioEntrega = horario;
+        }
+        else
+        {
+            nuevoPedido.DireccionEntrega = null;
+            nuevoPedido.HorarioEntrega = null;
         }
 
         if (!listaDetallesPedido.Any())

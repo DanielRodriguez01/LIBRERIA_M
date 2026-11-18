@@ -145,6 +145,84 @@
 }
 
 /* ==========================================
+   MODALIDAD DE ENTREGA (RETIRA EN LOCAL / ENVIAR PEDIDO)
+========================================== */
+.opciones-modalidad {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.opcion-modalidad {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border: 1px solid #D8D8D8;
+    border-radius: 10px;
+    background: #F8F8F8;
+    font-size: 13px;
+    font-weight: 800;
+    color: #333;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+
+    .opcion-modalidad input[type="radio"] {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: #1E3AF3;
+        cursor: pointer;
+    }
+
+    .opcion-modalidad:hover {
+        border-color: #3A86FF;
+    }
+
+.opcion-modalidad-activa {
+    border-color: #1E3AF3;
+    background: #EEF5FF;
+    color: #1E3AF3;
+}
+
+.bloque-envio {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding: 16px;
+    background: #F8F8F8;
+    border: 1px solid #E8E8E8;
+    border-radius: 12px;
+}
+
+.bloque-envio-direccion {
+    flex: 2 1 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bloque-envio-horario {
+    flex: 1 1 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.selector-horario {
+    display: flex;
+    gap: 8px;
+}
+
+    .selector-horario .input-form {
+        flex: 1;
+        min-width: 0;
+        padding: 0 10px;
+    }
+
+/* ==========================================
    ESTADOS Y BADGES
 ========================================== */
 .estado-disponible, .estado-stockbajo, .estado-sinstock, .estado-cancelado {

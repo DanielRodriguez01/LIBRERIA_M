@@ -25,6 +25,11 @@
         public int IdUsuario { get; set; }
         public string UsuarioNombre { get; set; } = string.Empty;
 
+        // Modalidad de entrega (viene del pedido de origen; ventas de mostrador = "RETIRO")
+        public string TipoEntrega { get; set; } = "RETIRO";
+        public string? DireccionEntrega { get; set; }
+        public TimeSpan? HorarioEntrega { get; set; }
+
         // Lista de renglones/productos
         public List<DetalleVentaItemDto> Detalles { get; set; } = new();
     }

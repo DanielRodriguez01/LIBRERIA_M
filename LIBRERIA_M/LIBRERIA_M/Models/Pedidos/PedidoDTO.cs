@@ -16,6 +16,11 @@ namespace LIBRERIA_M.Models.Pedidos
         public int? IdVenta { get; set; }
         public int? IdUsuario { get; set; }
 
+        // Modalidad de entrega: "RETIRO" o "ENVIO"
+        public string TipoEntrega { get; set; } = "RETIRO";
+        public string? DireccionEntrega { get; set; }
+        public TimeSpan? HorarioEntrega { get; set; }
+
         // Propiedades del Cliente
         public int IdCliente { get; set; }
         public string? NombreCliente { get; set; }

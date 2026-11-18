@@ -149,6 +149,15 @@
         background-color: #7EE055;
     }
 
+.filtro-cancelado { /* CANCELADO */
+    background-color: #757575;
+    color: white;
+}
+
+    .filtro-cancelado:hover {
+        background-color: #616161;
+    }
+
 /* ==========================================
    TABLA DE PEDIDOS
 ========================================== */
@@ -234,6 +243,19 @@
     .tabla-stock tbody tr:hover {
         background: #F8F8F8;
     }
+
+    /* Fila de un pedido CANCELADO: fondo y texto en gris para diferenciarla del resto */
+    .tabla-stock tbody tr.fila-cancelada {
+        background: #EDEDED;
+    }
+
+        .tabla-stock tbody tr.fila-cancelada td {
+            color: #9E9E9E;
+        }
+
+        .tabla-stock tbody tr.fila-cancelada:hover {
+            background: #E3E3E3;
+        }
 
 /* ==========================================
    ALINEACIONES UTILITARIAS

@@ -16,5 +16,7 @@ builder.Services.AddScoped<ProveedorService>();
 builder.Services.AddScoped<VentaService>();
 builder.Services.AddScoped<PedidoService>();
 builder.Services.AddScoped<PanelControlService>();
+builder.Services.AddScoped<EstadisticasService>();
+
 
 await builder.Build().RunAsync();

@@ -87,7 +87,7 @@
         letter-spacing: 0.025em;
     }
 
-/* BADGES DE ESTADO */
+/* BADGES DE ESTADO (PAGADO, PARCIAL, PENDIENTE) */
 .badge-estado {
     padding: 0.35rem 0.75rem;
     border-radius: 20px;
@@ -103,14 +103,14 @@
     color: #15803d;
 }
 
-.estado-deuda {
-    background-color: #fef2f2;
-    color: #b91c1c;
+.estado-parcial {
+    background-color: #fef3c7;
+    color: #b45309;
 }
 
 .estado-pendiente {
-    background-color: #fef3c7;
-    color: #b45309;
+    background-color: #fef2f2;
+    color: #b91c1c;
 }
 
 /* ACCIONES (PDF, IMPRIMIR) */

@@ -378,9 +378,9 @@
                     </h6>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Venta / Factura a Abonar <span class="text-danger">*</span></label>
+                        <label class="form-label small fw-bold">Venta a Abonar <span class="text-danger">*</span></label>
                         <select class="form-select" value="@idVentaSeleccionada" @onchange="OnVentaSeleccionadaChanged">
-                            <option value="0">-- Seleccionar Factura Pendiente --</option>
+                            <option value="0">-- Venta con saldo Pendiente --</option>
                             @foreach (var v in historialCompras.Where(x => x.SaldoPendiente > 0))
                             {
                                 <option value="@v.IdVenta">
@@ -409,8 +409,6 @@
                         <select class="form-select" @bind="metodoPago">
                             <option value="Efectivo">Efectivo</option>
                             <option value="Transferencia">Transferencia</option>
-                            <option value="Debito">Tarjeta de Débito</option>
-                            <option value="Credito">Tarjeta de Crédito</option>
                         </select>
                     </div>
 

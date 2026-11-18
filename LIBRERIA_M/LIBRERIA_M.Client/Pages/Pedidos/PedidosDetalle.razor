@@ -2,9 +2,12 @@
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 @using global::LIBRERIA_M.Client.Services
+@using global::LIBRERIA_M.Client.Models.Pedidos
+@using global::LIBRERIA_M.Client.Models.Stock
 @using System.Globalization
 
 @inject PedidoService PedidoService
+@inject ProductoService ProductoService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -15,6 +18,14 @@
     <h2 class="titulo-modulo">
         PEDIDOS (DETALLE)
     </h2>
+
+    @if (!string.IsNullOrEmpty(mensajeExito))
+    {
+        <div class="banner-exito">
+            <span><i class="fa-solid fa-circle-check"></i> @mensajeExito</span>
+            <button type="button" class="banner-exito-cerrar" @onclick="() => mensajeExito = null">×</button>
+        </div>
+    }
 
     @if (cargando)
     {
@@ -39,26 +50,22 @@
             </button>
 
             <div class="grupo-botones-flujo">
-                <button class="btn-accion btn-editar-pedido" @onclick="EditarPedido">
-                    <i class="fa-solid fa-pen"></i> EDITAR PEDIDO
-                </button>
-
                 @if (pedido.Estado?.ToUpper() != "CANCELADO" && pedido.Estado?.ToUpper() != "ENTREGADO")
                 {
-                    <button class="btn-accion btn-cancelar-pedido" @onclick="CancelarPedido">
+                    <button class="btn-accion btn-cancelar-pedido" @onclick="AbrirModalCancelar">
                         <i class="fa-solid fa-square-xmark"></i> CANCELAR PEDIDO
                     </button>
                 }
 
                 @if (pedido.Estado?.ToUpper() == "PENDIENTE")
                 {
-                    <button class="btn-accion btn-marcar-terminado" @onclick="MarcarComoTerminado">
+                    <button class="btn-accion btn-marcar-terminado" @onclick="AbrirModalTerminar">
                         MARCAR COMO TERMINADO
                     </button>
                 }
                 else if (pedido.Estado?.ToUpper() == "TERMINADO")
                 {
-                    <button class="btn-accion btn-marcar-entregado" @onclick="MarcarComoEntregado">
+                    <button class="btn-accion btn-marcar-entregado" @onclick="AbrirModalConfirmarEntrega">
                         MARCAR COMO ENTREGADO
                     </button>
                 }
@@ -96,12 +103,37 @@
                                 <strong class="valor">@(pedido.FechaEntrega.HasValue ? pedido.FechaEntrega.Value.ToString("dd/MM/yyyy") : "-")</strong>
                             </div>
                             <div class="item-detalle">
+                                <span class="label"><i class="@(EsEnvio ? "fa-solid fa-truck" : "fa-solid fa-store")"></i> MODALIDAD:</span>
+                                <strong class="valor">@(EsEnvio ? "ENVIAR PEDIDO" : "RETIRA EN LOCAL")</strong>
+                            </div>
+                            @if (EsEnvio)
+                            {
+                                <div class="item-detalle">
+                                    <span class="label"><i class="fa-solid fa-location-dot"></i> ENTREGAR EN:</span>
+                                    <strong class="valor valor-direccion">@(string.IsNullOrWhiteSpace(pedido.DireccionEntrega) ? "-" : pedido.DireccionEntrega)</strong>
+                                </div>
+                                <div class="item-detalle">
+                                    <span class="label"><i class="fa-regular fa-clock"></i> HORARIO:</span>
+                                    <strong class="valor">@FormatearHorario(pedido.HorarioEntrega)</strong>
+                                </div>
+                            }
+                            <div class="item-detalle">
                                 <span class="label"><i class="fa-regular fa-clock"></i> ESTADO ACTUAL:</span>
                                 <span class="@ObtenerClaseBadgeEstado(pedido.Estado)">
                                     @(string.IsNullOrWhiteSpace(pedido.Estado) ? "Sin estado" : pedido.Estado.ToUpper())
                                 </span>
                             </div>
                         </div>
+
+                        @* La modalidad de entrega se puede cambiar mientras el pedido esté PENDIENTE o TERMINADO *@
+                        @if (PuedeEditar)
+                        {
+                            <div class="mt-3">
+                                <button type="button" class="btn-accion btn-editar-pedido" @onclick="AbrirModalEditarEntrega">
+                                    <i class="fa-solid fa-pen"></i> EDITAR ENTREGA
+                                </button>
+                            </div>
+                        }
 
                         <div class="caja-detalle-texto mt-3">
                             <span class="label-box"><i class="fa-solid fa-bars-staggered"></i> DETALLE DEL PEDIDO:</span>
@@ -164,8 +196,8 @@
                                 {
                                     @foreach (var d in pedido.Detalle)
                                     {
-                                        var descProducto = d.Subtotal * (pedido.PorcentajeDescuento / 100m);
-                                        var totalProducto = d.Subtotal - descProducto;
+                                        var totalProducto = TotalLineaConDescuento(d, PorcentajeDescuentoPedido);
+                                        var descProducto = d.Subtotal - totalProducto;
 
                                         <tr>
                                             <td><strong>@d.NombreProducto</strong></td>
@@ -188,12 +220,46 @@
                         </table>
                     </div>
 
-                    @if (pedido.Estado?.ToUpper() == "PENDIENTE")
+                    @* Edición de productos: solo mientras el pedido esté PENDIENTE o TERMINADO *@
+                    @if (PuedeEditar)
                     {
-                        <div class="mt-3">
-                            <button class="btn-cyan" @onclick="AgregarProducto">
-                                + AGREGAR PRODUCTO
+                        <div class="editar-zona mt-3">
+
+                            <button type="button" class="btn-accion btn-editar-pedido" @onclick="AlternarEdicion" disabled="@procesandoAgregar">
+                                <i class="@(modoEdicion ? "fa-solid fa-check" : "fa-solid fa-pen")"></i> @(modoEdicion ? "FINALIZAR EDICIÓN" : "EDITAR PEDIDO")
                             </button>
+
+                            @if (!string.IsNullOrEmpty(mensajeErrorEdicion))
+                            {
+                                <div class="entrega-alerta-error mt-3">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> @mensajeErrorEdicion
+                                </div>
+                            }
+
+                            <div class="editar-barra @(modoEdicion ? "" : "editar-barra-inactiva")">
+
+                                <div class="editar-barra-producto">
+                                    <select class="editar-select" @bind="idProductoSeleccionado" disabled="@(!modoEdicion || procesandoAgregar)">
+                                        <option value="0">-- Seleccionar Producto --</option>
+                                        @foreach (var p in listaProductos)
+                                        {
+                                            <option value="@p.IdProducto">@p.Nombre (@p.PrecioUnitario.ToString("C", formatoMoneda))</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="editar-barra-cantidad">
+                                    <input type="number" class="editar-cantidad" placeholder="Cant." min="1" step="1"
+                                           @bind="cantidadAgregar" disabled="@(!modoEdicion || procesandoAgregar)" />
+                                </div>
+
+                                <button type="button" class="btn-agregar-producto-pedido" @onclick="AgregarProducto"
+                                        disabled="@(!modoEdicion || procesandoAgregar)">
+                                    @(procesandoAgregar ? "AGREGANDO..." : "+ AGREGAR PRODUCTO")
+                                </button>
+
+                            </div>
+
                         </div>
                     }
                 </div>
@@ -218,7 +284,7 @@
                             <strong>@SubtotalPedido.ToString("C", formatoMoneda)</strong>
                         </div>
                         <div class="resumen-fila mt-2">
-                            <span>DESCUENTO (@pedido.PorcentajeDescuento.ToString("0.##")%)</span>
+                            <span>DESCUENTO (@PorcentajeDescuentoPedido.ToString("0.##")%)</span>
                             <strong class="text-danger">-@MontoDescuentoTotal.ToString("C", formatoMoneda)</strong>
                         </div>
                         <hr class="linea-divisora" />
@@ -233,24 +299,362 @@
                     <h3 class="subtitulo-seccion">HISTORIAL DE ESTADOS</h3>
 
                     <div class="timeline-historial mt-3">
-                        <div class="item-timeline">
-                            <div class="punto-timeline rojo"></div>
-                            <div class="contenido-timeline">
-                                <span>@pedido.FechaPedido.ToString("dd/MM/yyyy HH:mm") Pedido creado Pendiente</span>
+                        @if (historial.Any())
+                        {
+                            @foreach (var h in historial)
+                            {
+                                <div class="item-timeline">
+                                    <div class="punto-timeline @ObtenerClasePuntoHistorial(h.Estado)"></div>
+                                    <div class="contenido-timeline">
+                                        <span>@h.FechaCambio.ToString("dd/MM/yyyy HH:mm") @h.Estado.ToUpper()</span>
+                                        @if (!string.IsNullOrWhiteSpace(h.Detalle))
+                                        {
+                                            <small class="detalle-timeline">@h.Detalle</small>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="item-timeline">
+                                <div class="punto-timeline rojo"></div>
+                                <div class="contenido-timeline">
+                                    <span>@pedido.FechaPedido.ToString("dd/MM/yyyy HH:mm") PENDIENTE</span>
+                                    <small class="detalle-timeline">Pedido creado</small>
+                                </div>
                             </div>
-                        </div>
-                        <div class="item-timeline">
-                            <div class="punto-timeline gris"></div>
-                        </div>
-                        <div class="item-timeline">
-                            <div class="punto-timeline gris"></div>
-                        </div>
+                        }
+
+                        @foreach (var paso in PasosPendientes)
+                        {
+                            <div class="item-timeline">
+                                <div class="punto-timeline gris"></div>
+                                <div class="contenido-timeline">
+                                    <span class="paso-pendiente-texto">@paso</span>
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
 
             </div>
 
         </div>
+
+        @if (mostrarModalTerminar)
+        {
+            <!-- MODAL PERSONALIZADO: MARCAR COMO TERMINADO -->
+            <div class="entrega-overlay">
+                <div class="entrega-modal" style="max-width: 480px;">
+                    <div class="entrega-cabecera">
+                        <h3>CAMBIAR ESTADO A TERMINADO</h3>
+                        <button type="button" class="entrega-cerrar" @onclick="CerrarModalTerminar" disabled="@procesandoAccion">×</button>
+                    </div>
+                    <div class="entrega-cuerpo text-center py-4">
+                        <i class="fa-solid fa-triangle-exclamation text-warning fa-3x mb-3"></i>
+                        <p class="fw-bold mb-2">¿Desea cambiar el estado del pedido a TERMINADO?</p>
+                        <p class="text-muted small">El pedido pasará a estar preparado y listo para entregar. Al confirmar se descontará el stock de los productos.</p>
+                    </div>
+                    <div class="entrega-pie">
+                        <button type="button" class="btn-accion btn-modal-cancelar" @onclick="CerrarModalTerminar" disabled="@procesandoAccion">
+                            CANCELAR
+                        </button>
+                        <button type="button" class="btn-accion btn-marcar-terminado" @onclick="ConfirmarTerminar" disabled="@procesandoAccion">
+                            @(procesandoAccion ? "PROCESANDO..." : "ACEPTAR")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (mostrarModalConfirmarEntrega)
+        {
+            <!-- MODAL PERSONALIZADO: RECONFIRMAR ANTES DE ABRIR VENTA -->
+            <div class="entrega-overlay">
+                <div class="entrega-modal" style="max-width: 480px;">
+                    <div class="entrega-cabecera">
+                        <h3>CONFIRMAR ENTREGA DE PEDIDO</h3>
+                        <button type="button" class="entrega-cerrar" @onclick="CerrarModalConfirmarEntrega">×</button>
+                    </div>
+                    <div class="entrega-cuerpo text-center py-4">
+                        <i class="fa-solid fa-circle-exclamation text-success fa-3x mb-3"></i>
+                        <p class="fw-bold mb-2">¿Desea confirmar la ENTREGA del pedido?</p>
+                        <p class="text-muted small">A continuación se abrirá el registro de la venta, donde podrá indicar cuánto abona el cliente. El stock ya se descontó al marcar el pedido como TERMINADO.</p>
+                    </div>
+                    <div class="entrega-pie">
+                        <button type="button" class="btn-accion btn-modal-cancelar" @onclick="CerrarModalConfirmarEntrega">
+                            CANCELAR
+                        </button>
+                        <button type="button" class="btn-accion btn-marcar-entregado" @onclick="ProcedicionarModalEntrega">
+                            ACEPTAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (mostrarModalCancelar)
+        {
+            <!-- MODAL PERSONALIZADO: CANCELAR PEDIDO -->
+            <div class="entrega-overlay">
+                <div class="entrega-modal" style="max-width: 480px;">
+                    <div class="entrega-cabecera">
+                        <h3>CANCELAR PEDIDO</h3>
+                        <button type="button" class="entrega-cerrar" @onclick="CerrarModalCancelar" disabled="@procesandoAccion">×</button>
+                    </div>
+                    <div class="entrega-cuerpo text-center py-4">
+                        <i class="fa-solid fa-ban text-danger fa-3x mb-3"></i>
+                        <p class="fw-bold mb-2">¿Está seguro de CANCELAR este pedido?</p>
+                        <p class="text-muted small">El pedido quedará anulado y no se podrá procesar.</p>
+                    </div>
+                    <div class="entrega-pie">
+                        <button type="button" class="btn-accion btn-modal-cancelar" @onclick="CerrarModalCancelar" disabled="@procesandoAccion">
+                            CANCELAR
+                        </button>
+                        <button type="button" class="btn-accion btn-cancelar-pedido" @onclick="ConfirmarCancelar" disabled="@procesandoAccion">
+                            @(procesandoAccion ? "PROCESANDO..." : "CONFIRMAR")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (mostrarModalEditarEntrega)
+        {
+            <!-- ==========================================================
+                 MODAL: MODIFICAR LA MODALIDAD DE ENTREGA DEL PEDIDO
+            ========================================================== -->
+            <div class="entrega-overlay">
+                <div class="entrega-modal" style="max-width: 600px;">
+
+                    <div class="entrega-cabecera">
+                        <h3>MODIFICAR ENTREGA DEL PEDIDO</h3>
+                        <button type="button" class="entrega-cerrar" @onclick="CerrarModalEditarEntrega" disabled="@guardandoEntregaEdicion">×</button>
+                    </div>
+
+                    <div class="entrega-cuerpo">
+
+                        @if (!string.IsNullOrEmpty(mensajeErrorEditarEntrega))
+                        {
+                            <div class="entrega-alerta-error">
+                                <i class="fa-solid fa-triangle-exclamation"></i> @mensajeErrorEditarEntrega
+                            </div>
+                        }
+
+                        <div class="opciones-modalidad">
+                            <label class="opcion-modalidad @(!EdEsEnvio ? "opcion-modalidad-activa" : "")">
+                                <input type="radio" name="modalidadEntregaEdicion" checked="@(!EdEsEnvio)" @onchange="EdSeleccionarRetiro" disabled="@guardandoEntregaEdicion" />
+                                <span><i class="fa-solid fa-store"></i> RETIRA EN LOCAL</span>
+                            </label>
+
+                            <label class="opcion-modalidad @(EdEsEnvio ? "opcion-modalidad-activa" : "")">
+                                <input type="radio" name="modalidadEntregaEdicion" checked="@EdEsEnvio" @onchange="EdSeleccionarEnvio" disabled="@guardandoEntregaEdicion" />
+                                <span><i class="fa-solid fa-truck"></i> ENVIAR PEDIDO</span>
+                            </label>
+                        </div>
+
+                        @if (EdEsEnvio)
+                        {
+                            <div class="entrega-campo-texto">
+                                <label class="entrega-etiqueta">ENTREGAR EN:</label>
+                                <input type="text" class="entrega-input-texto" maxlength="250"
+                                       placeholder="Escriba la dirección a enviar el pedido"
+                                       @bind="edDireccion" @bind:event="oninput" disabled="@guardandoEntregaEdicion" />
+                            </div>
+
+                            <div class="entrega-campo-texto">
+                                <label class="entrega-etiqueta">HORARIO DE ENTREGA</label>
+                                <div class="entrega-fila-horario">
+                                    <select class="editar-select" @bind="edHora" disabled="@guardandoEntregaEdicion">
+                                        <option value="0">HORA</option>
+                                        @for (int h = 1; h <= 12; h++)
+                                        {
+                                            <option value="@h">@h</option>
+                                        }
+                                    </select>
+
+                                    <select class="editar-select" @bind="edMinuto" disabled="@guardandoEntregaEdicion">
+                                        <option value="-1">MIN</option>
+                                        @foreach (var m in minutosDisponibles)
+                                        {
+                                            <option value="@m">@m.ToString("00")</option>
+                                        }
+                                    </select>
+
+                                    <select class="editar-select" @bind="edPeriodo" disabled="@guardandoEntregaEdicion">
+                                        <option value="AM">AM</option>
+                                        <option value="PM">PM</option>
+                                    </select>
+                                </div>
+                            </div>
+                        }
+
+                    </div>
+
+                    <div class="entrega-pie">
+                        <button type="button" class="btn-accion btn-modal-cancelar" @onclick="CerrarModalEditarEntrega" disabled="@guardandoEntregaEdicion">
+                            CANCELAR
+                        </button>
+                        <button type="button" class="btn-accion btn-editar-pedido" @onclick="GuardarEntrega" disabled="@guardandoEntregaEdicion">
+                            @if (guardandoEntregaEdicion)
+                            {
+                                <span>GUARDANDO...</span>
+                            }
+                            else
+                            {
+                                <i class="fa-solid fa-check"></i>
+                                <span>GUARDAR CAMBIOS</span>
+                            }
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        }
+
+        @if (mostrarModalEntrega)
+        {
+            <!-- ==========================================================
+                 MODAL: REGISTRAR LA VENTA Y ENTREGAR EL PEDIDO
+            ========================================================== -->
+            <div class="entrega-overlay">
+                <div class="entrega-modal">
+
+                    <div class="entrega-cabecera">
+                        <h3>REGISTRAR VENTA Y ENTREGAR PEDIDO</h3>
+                        <button type="button" class="entrega-cerrar" @onclick="CerrarModalEntrega" disabled="@procesandoEntrega">×</button>
+                    </div>
+
+                    <div class="entrega-cuerpo">
+
+                        @if (!string.IsNullOrEmpty(mensajeErrorEntrega))
+                        {
+                            <div class="entrega-alerta-error">
+                                <i class="fa-solid fa-triangle-exclamation"></i> @mensajeErrorEntrega
+                            </div>
+                        }
+
+                        <div class="entrega-datos">
+                            <div class="entrega-dato">
+                                <span>CLIENTE</span>
+                                <strong>@pedido.Cliente</strong>
+                            </div>
+                            <div class="entrega-dato">
+                                <span>N°PEDIDO</span>
+                                <strong>@pedido.NumeroPedido</strong>
+                            </div>
+                            <div class="entrega-dato">
+                                <span>FECHA</span>
+                                <strong>@DateTime.Now.ToString("dd/MM/yyyy")</strong>
+                            </div>
+                        </div>
+
+                        <h4 class="entrega-subtitulo">PRODUCTOS</h4>
+
+                        <div class="tabla-container">
+                            <table class="tabla-stock">
+                                <thead>
+                                    <tr>
+                                        <th>PRODUCTO</th>
+                                        <th class="text-center">CANTIDAD</th>
+                                        <th class="text-right">SUBTOTAL</th>
+                                        <th class="text-right">DESCUENTO</th>
+                                        <th class="text-right">TOTAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var d in pedido.Detalle)
+                                    {
+                                        var totalLinea = TotalLineaConDescuento(d, PorcentajeDescuentoPedido);
+                                        var descLinea = d.Subtotal - totalLinea;
+
+                                        <tr>
+                                            <td><strong>@d.NombreProducto</strong></td>
+                                            <td class="text-center">@d.Cantidad</td>
+                                            <td class="text-right">@d.Subtotal.ToString("C", formatoMoneda)</td>
+                                            <td class="text-right">@descLinea.ToString("C", formatoMoneda)</td>
+                                            <td class="text-right"><strong>@totalLinea.ToString("C", formatoMoneda)</strong></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h4 class="entrega-subtitulo">PAGO DEL CLIENTE</h4>
+
+                        <div class="entrega-pagos">
+                            <div class="entrega-campo-monto">
+                                <label>EFECTIVO</label>
+                                <div class="entrega-input-monto">
+                                    <span>$</span>
+                                    <input type="number" step="0.01" min="0" placeholder="0,00" @bind="montoEfectivo" />
+                                </div>
+                            </div>
+
+                            <div class="entrega-campo-monto">
+                                <label>TRANSFERENCIA</label>
+                                <div class="entrega-input-monto">
+                                    <span>$</span>
+                                    <input type="number" step="0.01" min="0" placeholder="0,00" @bind="montoTransferencia" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="entrega-resumen">
+                            <div class="resumen-fila">
+                                <span>TOTAL DE LA VENTA</span>
+                                <strong>@TotalVentaModal.ToString("C", formatoMoneda)</strong>
+                            </div>
+                            <div class="resumen-fila mt-2">
+                                <span>PAGADO</span>
+                                <strong class="texto-verde">@TotalPagadoModal.ToString("C", formatoMoneda)</strong>
+                            </div>
+                            <hr class="linea-divisora" />
+                            <div class="resumen-fila total">
+                                <span>SALDO PENDIENTE</span>
+                                <strong class="@(SaldoModal > 0 ? "texto-rojo" : "texto-verde")">@((SaldoModal < 0 ? 0m : SaldoModal).ToString("C", formatoMoneda))</strong>
+                            </div>
+                        </div>
+
+                        @if (PagoExcedeTotal)
+                        {
+                            <div class="entrega-alerta-error">
+                                <i class="fa-solid fa-triangle-exclamation"></i> El monto a pagar supera el total de la venta.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="entrega-cartel">
+                                <span>LA VENTA QUEDARÁ:</span>
+                                <span class="@ObtenerClaseEstadoVentaPrevisto()">@EstadoVentaPrevisto</span>
+                            </div>
+                        }
+
+                    </div>
+
+                    <div class="entrega-pie">
+                        <button type="button" class="btn-accion btn-modal-cancelar" @onclick="CerrarModalEntrega" disabled="@procesandoEntrega">
+                            CANCELAR
+                        </button>
+                        <button type="button" class="btn-accion btn-marcar-entregado"
+                                @onclick="ConfirmarEntrega"
+                                disabled="@(procesandoEntrega || PagoExcedeTotal || MontosInvalidos)">
+                            @if (procesandoEntrega)
+                            {
+                                <span>PROCESANDO...</span>
+                            }
+                            else
+                            {
+                                <i class="fa-solid fa-check"></i>
+                                <span>FINALIZAR VENTA Y ENTREGAR</span>
+                            }
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        }
     }
 
 </div>
@@ -260,11 +664,104 @@
     public int IdPedido { get; set; }
 
     private PedidoDTO? pedido;
+    private List<HistorialPedidoDTO> historial = new();
     private bool cargando = true;
+    private string? mensajeExito;
+
+    // Modales de confirmación y entrega
+    private bool mostrarModalTerminar = false;
+    private bool mostrarModalCancelar = false;
+    private bool mostrarModalConfirmarEntrega = false;
+    private bool mostrarModalEntrega = false;
+    private bool procesandoAccion = false;
+    private bool procesandoEntrega = false;
+    private string? mensajeErrorEntrega;
+    private decimal? montoEfectivo = 0m;
+    private decimal? montoTransferencia = 0m;
+
+    // Edición de productos del pedido
+    private bool modoEdicion = false;
+    private bool procesandoAgregar = false;
+    private string? mensajeErrorEdicion;
+    private List<ProductoDto> listaProductos = new();
+    private int idProductoSeleccionado = 0;
+    private int cantidadAgregar = 1;
+
+    // Edición de la modalidad de entrega (Retira en local / Enviar pedido)
+    private bool mostrarModalEditarEntrega = false;
+    private bool guardandoEntregaEdicion = false;
+    private string? mensajeErrorEditarEntrega;
+    private string edTipoEntrega = "RETIRO";
+    private string edDireccion = string.Empty;
+    private int edHora = 0;        // 0 = sin elegir, 1 a 12
+    private int edMinuto = -1;     // -1 = sin elegir, 0 a 55
+    private string edPeriodo = "AM";
+    private readonly int[] minutosDisponibles = Enumerable.Range(0, 12).Select(i => i * 5).ToArray();
+
+    // Solo se pueden editar los productos de un pedido PENDIENTE o TERMINADO
+    private bool PuedeEditar
+    {
+        get
+        {
+            var estado = pedido?.Estado?.ToUpper().Trim();
+            return estado == "PENDIENTE" || estado == "TERMINADO";
+        }
+    }
+
+    // Modalidad de entrega del pedido
+    private bool EsEnvio => string.Equals(pedido?.TipoEntrega, "ENVIO", StringComparison.OrdinalIgnoreCase);
+    private bool EdEsEnvio => edTipoEntrega == "ENVIO";
+
+    // Muestra el horario con AM/PM (por ejemplo "2:30 PM")
+    private static string FormatearHorario(TimeSpan? horario)
+    {
+        return horario.HasValue
+            ? DateTime.Today.Add(horario.Value).ToString("h:mm tt", CultureInfo.InvariantCulture)
+            : "-";
+    }
+
+    // Descuento del pedido
+    private decimal PorcentajeDescuentoPedido => pedido?.PorcentajeDescuento ?? 0m;
+
+    private static decimal TotalLineaConDescuento(DetallePedidoDTO d, decimal porcentaje)
+    {
+        return Math.Round(d.Subtotal * (1 - (porcentaje / 100m)), 2, MidpointRounding.AwayFromZero);
+    }
 
     private decimal SubtotalPedido => pedido?.Detalle?.Sum(d => d.Subtotal) ?? (pedido?.Total ?? 0m);
-    private decimal MontoDescuentoTotal => SubtotalPedido * ((pedido?.PorcentajeDescuento ?? 0m) / 100m);
-    private decimal TotalFinalPedido => SubtotalPedido - MontoDescuentoTotal;
+
+    private decimal TotalFinalPedido =>
+        (pedido?.Detalle != null && pedido.Detalle.Any())
+            ? pedido.Detalle.Sum(d => TotalLineaConDescuento(d, PorcentajeDescuentoPedido))
+            : Math.Round(SubtotalPedido * (1 - (PorcentajeDescuentoPedido / 100m)), 2, MidpointRounding.AwayFromZero);
+
+    private decimal MontoDescuentoTotal => SubtotalPedido - TotalFinalPedido;
+
+    private decimal ValorEfectivo => montoEfectivo ?? 0m;
+    private decimal ValorTransferencia => montoTransferencia ?? 0m;
+    private decimal TotalVentaModal => TotalFinalPedido;
+    private decimal TotalPagadoModal => ValorEfectivo + ValorTransferencia;
+    private decimal SaldoModal => TotalVentaModal - TotalPagadoModal;
+    private bool PagoExcedeTotal => TotalPagadoModal > TotalVentaModal;
+    private bool MontosInvalidos => ValorEfectivo < 0 || ValorTransferencia < 0;
+
+    private string EstadoVentaPrevisto =>
+        TotalPagadoModal <= 0 ? "PENDIENTE" :
+        TotalPagadoModal >= TotalVentaModal ? "PAGADA" : "PARCIAL";
+
+    private IEnumerable<string> PasosPendientes
+    {
+        get
+        {
+            var estado = pedido?.Estado?.ToUpper();
+            return estado switch
+            {
+                "PENDIENTE" => new[] { "Terminado", "Entregado" },
+                "TERMINADO" => new[] { "Entregado" },
+                _ => Array.Empty<string>()
+            };
+        }
+    }
 
     private readonly CultureInfo formatoMoneda = new CultureInfo("es-AR")
     {
@@ -283,12 +780,26 @@
         await CargarDetallePedido();
     }
 
-    private async Task CargarDetallePedido()
+    // mostrarCargando = false recarga los datos sin ocultar la pantalla (se usa al agregar productos)
+    private async Task CargarDetallePedido(bool mostrarCargando = true)
     {
-        cargando = true;
+        if (mostrarCargando) cargando = true;
+
         try
         {
             pedido = await PedidoService.ObtenerPorId(IdPedido);
+
+            try
+            {
+                historial = pedido != null
+                    ? await PedidoService.ListarHistorialPedido(IdPedido)
+                    : new List<HistorialPedidoDTO>();
+            }
+            catch (Exception exHistorial)
+            {
+                historial = new List<HistorialPedidoDTO>();
+                Console.WriteLine($"Error al obtener el historial del pedido: {exHistorial.Message}");
+            }
         }
         catch (Exception ex)
         {
@@ -298,35 +809,321 @@
         {
             cargando = false;
         }
+
+        // Si el pedido ya no es editable (entregado o cancelado) se cierra el modo edición
+        if (!PuedeEditar)
+        {
+            modoEdicion = false;
+            mensajeErrorEdicion = null;
+        }
     }
 
-    private async Task MarcarComoTerminado()
+    // --- MÉTODOS DE EDICIÓN DE PRODUCTOS ---
+    private async Task AlternarEdicion()
     {
-        if (await JS.InvokeAsync<bool>("confirm", "⚠️ ¿Desea cambiar el estado del pedido a TERMINADO?\n\nEl pedido pasará a estar preparado y listo para entregar."))
+        if (!PuedeEditar) return;
+
+        mensajeErrorEdicion = null;
+        modoEdicion = !modoEdicion;
+
+        // La lista de productos se carga la primera vez que se activa la edición
+        if (modoEdicion && !listaProductos.Any())
+        {
+            await CargarProductos();
+        }
+    }
+
+    private async Task CargarProductos()
+    {
+        try
+        {
+            var productos = await ProductoService.ObtenerProductos();
+            listaProductos = productos ?? new List<ProductoDto>();
+        }
+        catch (Exception ex)
+        {
+            mensajeErrorEdicion = "Error al cargar los productos: " + ex.Message;
+        }
+    }
+
+    private async Task AgregarProducto()
+    {
+        if (pedido == null || !PuedeEditar || !modoEdicion || procesandoAgregar) return;
+
+        mensajeErrorEdicion = null;
+
+        if (idProductoSeleccionado <= 0)
+        {
+            mensajeErrorEdicion = "Por favor seleccione un producto de la lista.";
+            return;
+        }
+
+        if (cantidadAgregar <= 0)
+        {
+            mensajeErrorEdicion = "La cantidad debe ser mayor a cero.";
+            return;
+        }
+
+        procesandoAgregar = true;
+
+        try
+        {
+            // Si el servidor rechaza la operación (por ejemplo, stock insuficiente),
+            // lanza una excepción con el mensaje real
+            await PedidoService.AgregarProductoAPedido(new AgregarDetallePedidoDTO
+            {
+                IdPedido = IdPedido,
+                IdProducto = idProductoSeleccionado,
+                Cantidad = cantidadAgregar
+            });
+
+            idProductoSeleccionado = 0;
+            cantidadAgregar = 1;
+
+            // Recarga el pedido para ver los productos y el total recalculado
+            await CargarDetallePedido(false);
+        }
+        catch (Exception ex)
+        {
+            mensajeErrorEdicion = ex.Message;
+        }
+        finally
+        {
+            procesandoAgregar = false;
+        }
+    }
+
+    // --- MÉTODOS MODAL EDITAR MODALIDAD DE ENTREGA ---
+    private void AbrirModalEditarEntrega()
+    {
+        if (pedido == null || !PuedeEditar) return;
+
+        // Se parte de lo que ya tiene guardado el pedido
+        edTipoEntrega = EsEnvio ? "ENVIO" : "RETIRO";
+        edDireccion = pedido.DireccionEntrega ?? string.Empty;
+
+        if (pedido.HorarioEntrega is TimeSpan horario)
+        {
+            var hora24 = horario.Hours;
+            edPeriodo = hora24 >= 12 ? "PM" : "AM";
+
+            var hora12 = hora24 % 12;
+            edHora = hora12 == 0 ? 12 : hora12;
+
+            // Los minutos del selector van de a 5
+            edMinuto = Math.Min(55, (int)(Math.Round(horario.Minutes / 5.0) * 5));
+        }
+        else
+        {
+            edHora = 0;
+            edMinuto = -1;
+            edPeriodo = "AM";
+        }
+
+        mensajeErrorEditarEntrega = null;
+        mostrarModalEditarEntrega = true;
+    }
+
+    private void CerrarModalEditarEntrega()
+    {
+        if (guardandoEntregaEdicion) return;
+        mostrarModalEditarEntrega = false;
+        mensajeErrorEditarEntrega = null;
+    }
+
+    private void EdSeleccionarRetiro()
+    {
+        edTipoEntrega = "RETIRO";
+        mensajeErrorEditarEntrega = null;
+    }
+
+    private void EdSeleccionarEnvio()
+    {
+        edTipoEntrega = "ENVIO";
+        mensajeErrorEditarEntrega = null;
+    }
+
+    // Convierte hora (1-12) + minutos + AM/PM al formato de 24 horas que guarda la base
+    private TimeSpan? ConstruirHorarioEdicion()
+    {
+        if (edHora < 1 || edHora > 12 || edMinuto < 0)
+            return null;
+
+        var hora24 = edHora % 12;
+        if (edPeriodo == "PM")
+            hora24 += 12;
+
+        return new TimeSpan(hora24, edMinuto, 0);
+    }
+
+    private async Task GuardarEntrega()
+    {
+        if (pedido == null || guardandoEntregaEdicion) return;
+
+        mensajeErrorEditarEntrega = null;
+
+        var dto = new ActualizarEntregaPedidoDTO
+        {
+            TipoEntrega = edTipoEntrega
+        };
+
+        // Si se envía, la dirección y el horario son obligatorios
+        if (EdEsEnvio)
+        {
+            if (string.IsNullOrWhiteSpace(edDireccion))
+            {
+                mensajeErrorEditarEntrega = "Escriba la dirección a enviar el pedido.";
+                return;
+            }
+
+            var horario = ConstruirHorarioEdicion();
+            if (horario == null)
+            {
+                mensajeErrorEditarEntrega = "Seleccione el horario de entrega (hora, minutos y AM/PM).";
+                return;
+            }
+
+            dto.DireccionEntrega = edDireccion.Trim();
+            dto.HorarioEntrega = horario;
+        }
+
+        guardandoEntregaEdicion = true;
+
+        try
+        {
+            // Si el servidor rechaza el cambio, lanza una excepción con el mensaje real
+            await PedidoService.ActualizarEntregaPedido(IdPedido, dto);
+
+            mostrarModalEditarEntrega = false;
+            mensajeExito = "Modalidad de entrega actualizada correctamente.";
+
+            await CargarDetallePedido(false);
+        }
+        catch (Exception ex)
+        {
+            mensajeErrorEditarEntrega = ex.Message;
+        }
+        finally
+        {
+            guardandoEntregaEdicion = false;
+        }
+    }
+
+    // --- MÉTODOS MODAL TERMINAR ---
+    private void AbrirModalTerminar() => mostrarModalTerminar = true;
+    private void CerrarModalTerminar()
+    {
+        if (procesandoAccion) return;
+        mostrarModalTerminar = false;
+    }
+
+    private async Task ConfirmarTerminar()
+    {
+        procesandoAccion = true;
+        try
         {
             var exito = await PedidoService.TerminarPedido(IdPedido);
+            mostrarModalTerminar = false;
             if (exito) await CargarDetallePedido();
-            else await JS.InvokeVoidAsync("alert", "Error al cambiar el estado a TERMINADO.");
+            else mensajeExito = "Error al cambiar el estado a TERMINADO.";
         }
-    }
-
-    private async Task MarcarComoEntregado()
-    {
-        if (await JS.InvokeAsync<bool>("confirm", "⚠️ ATENCIÓN: ¿Desea confirmar la ENTREGA del pedido?\n\nAl confirmar, se descontará el stock de los productos y se registrará automáticamente la venta correspondiente."))
+        finally
         {
-            var exito = await PedidoService.EntregarPedido(IdPedido);
-            if (exito) await CargarDetallePedido();
-            else await JS.InvokeVoidAsync("alert", "Error al procesar la entrega del pedido.");
+            procesandoAccion = false;
         }
     }
 
-    private async Task CancelarPedido()
+    // --- MÉTODOS MODAL CONFIRMAR ENTREGA Y ABRIR VENTA ---
+    private void AbrirModalConfirmarEntrega() => mostrarModalConfirmarEntrega = true;
+    private void CerrarModalConfirmarEntrega() => mostrarModalConfirmarEntrega = false;
+
+    private void ProcedicionarModalEntrega()
     {
-        if (await JS.InvokeAsync<bool>("confirm", "⚠️ ¿Está seguro de CANCELAR este pedido?\n\nEl pedido quedará anulado y no se podrá procesar."))
+        mostrarModalConfirmarEntrega = false;
+        montoEfectivo = 0m;
+        montoTransferencia = 0m;
+        mensajeErrorEntrega = null;
+        mostrarModalEntrega = true;
+    }
+
+    private void CerrarModalEntrega()
+    {
+        if (procesandoEntrega) return;
+        mostrarModalEntrega = false;
+        mensajeErrorEntrega = null;
+    }
+
+    private async Task ConfirmarEntrega()
+    {
+        if (pedido == null || PagoExcedeTotal || MontosInvalidos) return;
+
+        procesandoEntrega = true;
+        mensajeErrorEntrega = null;
+
+        try
+        {
+            var resultado = await PedidoService.EntregarPedido(IdPedido, new EntregarPedidoDTO
+            {
+                MontoEfectivo = ValorEfectivo,
+                MontoTransferencia = ValorTransferencia
+            });
+
+            mostrarModalEntrega = false;
+
+            // Con la venta ya registrada se va directo al detalle de la venta (comprobante),
+            // donde se puede imprimir o descargar el PDF
+            if (resultado?.IdVenta is int idVenta && idVenta > 0)
+            {
+                Navigation.NavigateTo($"/ventas/{idVenta}");
+                return;
+            }
+
+            // Si por algún motivo no llegó el id de la venta, se queda en el pedido con el mensaje
+            if (resultado != null && !string.IsNullOrEmpty(resultado.NumeroFactura))
+            {
+                var estadoVenta = resultado.EstadoVenta?.ToUpper() == "PAGADO" ? "PAGADA" : (resultado.EstadoVenta ?? "").ToUpper();
+                mensajeExito = $"Pedido entregado. Venta {resultado.NumeroFactura} registrada como {estadoVenta} (saldo pendiente: {resultado.SaldoPendiente.ToString("C", formatoMoneda)}).";
+            }
+            else
+            {
+                mensajeExito = "Pedido entregado correctamente.";
+            }
+
+            await CargarDetallePedido();
+        }
+        catch (Exception ex)
+        {
+            mensajeErrorEntrega = ex.Message;
+        }
+        finally
+        {
+            procesandoEntrega = false;
+        }
+    }
+
+    // --- MÉTODOS MODAL CANCELAR ---
+    private void AbrirModalCancelar() => mostrarModalCancelar = true;
+    private void CerrarModalCancelar()
+    {
+        if (procesandoAccion) return;
+        mostrarModalCancelar = false;
+    }
+
+    private async Task ConfirmarCancelar()
+    {
+        procesandoAccion = true;
+        try
         {
             var exito = await PedidoService.CancelarPedido(IdPedido);
-            if (exito) await CargarDetallePedido();
-            else await JS.InvokeVoidAsync("alert", "Error al cancelar el pedido.");
+            mostrarModalCancelar = false;
+
+            // Al cancelar correctamente se vuelve al listado, donde el pedido aparece en gris
+            if (exito) Navigation.NavigateTo("/pedidos");
+            else mensajeExito = "Error al cancelar el pedido.";
+        }
+        finally
+        {
+            procesandoAccion = false;
         }
     }
 
@@ -345,7 +1142,6 @@
             _ => 0
         };
 
-        // Únicamente el paso activo actual se resalta; los demás se desactivan en gris
         if (pasoActualNum == numeroPaso) return "paso-activo";
 
         return "paso-desactivado";
@@ -366,18 +1162,27 @@
         };
     }
 
-    private void EditarPedido()
+    private string ObtenerClasePuntoHistorial(string estado)
     {
-        // Navegación hacia formulario de edición si corresponde
+        return estado.ToUpper().Trim() switch
+        {
+            "PENDIENTE" => "rojo",
+            "TERMINADO" => "amarillo",
+            "ENTREGADO" => "verde",
+            "CANCELADO" => "gris-oscuro",
+            _ => "gris"
+        };
     }
 
-    private void AgregarProducto()
+    private string ObtenerClaseEstadoVentaPrevisto()
     {
-        // Lógica para agregar productos
+        return EstadoVentaPrevisto switch
+        {
+            "PENDIENTE" => "estado-sinstock",
+            "PARCIAL" => "estado-stockbajo",
+            _ => "estado-disponible"
+        };
     }
 
-    private void Volver()
-    {
-        Navigation.NavigateTo("/pedidos");
-    }
+    private void Volver() => Navigation.NavigateTo("/pedidos");
 }

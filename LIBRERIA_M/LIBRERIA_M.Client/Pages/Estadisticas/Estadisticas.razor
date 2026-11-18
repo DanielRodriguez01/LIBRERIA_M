@@ -1,0 +1,544 @@
+﻿@page "/estadisticas"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@using LIBRERIA_M.Client.Models.Estadisticas
+@using LIBRERIA_M.Client.Services
+
+@inject EstadisticasService EstadisticasService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Estadísticas</PageTitle>
+
+<div class="page-container">
+
+    <!-- TÍTULO DE LA VISTA -->
+    <h1 class="titulo-modulo">ESTADÍSTICAS</h1>
+
+    <!-- MENSAJE DE ERROR GLOBAL -->
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong>Atención:</strong> @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = null"></button>
+        </div>
+    }
+
+    <!-- CARD CONTENEDORA PRINCIPAL -->
+    <div class="card-principal">
+
+        <!-- BARRA SUPERIOR DE FILTROS (DESDE / HASTA / FILTRAR) -->
+        <div class="toolbar-filtros-fechas card border-0 shadow-sm p-3 mb-4 rounded-3 bg-white">
+            <div class="row align-items-center g-3">
+                <div class="col-md-4 d-flex align-items-center gap-2">
+                    <label class="fw-bold text-secondary text-nowrap">DESDE:</label>
+                    <input type="date" class="form-control" @bind="fechaDesde" />
+                </div>
+                <div class="col-md-4 d-flex align-items-center gap-2">
+                    <label class="fw-bold text-secondary text-nowrap">HASTA:</label>
+                    <input type="date" class="form-control" @bind="fechaHasta" />
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-info text-white fw-bold px-4 py-2 rounded-pill shadow-sm w-100" @onclick="FiltrarEstadisticas">
+                        <i class="fa-solid fa-filter me-2"></i> FILTRAR
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @if (cargando)
+        {
+            <div class="sin-registros py-5 text-center">
+                <div class="spinner-border text-primary me-2" role="status"></div>
+                <span>Cargando estadísticas del período...</span>
+            </div>
+        }
+        else
+        {
+            <!-- SECCIÓN 1: TARJETAS MÉTRICAS SUPERIORES (5 CARDS) -->
+            <div class="row g-3 mb-4">
+                <!-- Ventas Totales -->
+                <div class="col-xl col-md-4 col-sm-6">
+                    <div class="card-metrica card border-0 shadow-sm p-3 rounded-3 h-100 bg-white">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="icono-badge bg-success-subtle text-success rounded-circle p-2 me-2">
+                                <i class="fa-solid fa-dollar-sign"></i>
+                            </div>
+                            <span class="fw-bold text-muted small">VENTAS TOTALES</span>
+                        </div>
+                        <h3 class="fw-bold text-success mb-1 text-nowrap">$ @resumen.VentasTotales.ToString("N2")</h3>
+                        <small class="text-muted text-uppercase fs-7">TOTAL EN EL PERIODO</small>
+                    </div>
+                </div>
+
+                <!-- Total Compras -->
+                <div class="col-xl col-md-4 col-sm-6">
+                    <div class="card-metrica card border-0 shadow-sm p-3 rounded-3 h-100 bg-white">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="icono-badge bg-primary-subtle text-primary rounded-circle p-2 me-2">
+                                <i class="fa-solid fa-bag-shopping"></i>
+                            </div>
+                            <span class="fw-bold text-muted small">TOTAL COMPRAS</span>
+                        </div>
+                        <h3 class="fw-bold text-primary mb-1 text-nowrap">$ @resumen.ComprasTotales.ToString("N2")</h3>
+                        <small class="text-muted text-uppercase fs-7">TOTAL EN EL PERIODO</small>
+                    </div>
+                </div>
+
+                <!-- Ganancias Estimadas -->
+                <div class="col-xl col-md-4 col-sm-6">
+                    <div class="card-metrica card border-0 shadow-sm p-3 rounded-3 h-100 bg-white">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="icono-badge bg-info-subtle text-info rounded-circle p-2 me-2">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                            <span class="fw-bold text-muted small">GANANCIAS ESTIMADAS</span>
+                        </div>
+                        <h3 class="fw-bold text-info mb-1 text-nowrap">$ @resumen.GananciaEstimada.ToString("N2")</h3>
+                        <small class="text-muted text-uppercase fs-7">VENTAS - COMPRAS</small>
+                    </div>
+                </div>
+
+                <!-- Cantidad de Ventas -->
+                <div class="col-xl col-md-4 col-sm-6">
+                    <div class="card-metrica card border-0 shadow-sm p-3 rounded-3 h-100 bg-white">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="icono-badge bg-warning-subtle text-warning rounded-circle p-2 me-2">
+                                <i class="fa-solid fa-receipt"></i>
+                            </div>
+                            <span class="fw-bold text-muted small">CANTIDAD DE VENTAS</span>
+                        </div>
+                        <h3 class="fw-bold text-warning mb-1">@resumen.CantidadVentas</h3>
+                        <small class="text-muted text-uppercase fs-7">TOTAL DE VENTAS</small>
+                    </div>
+                </div>
+
+                <!-- Productos Vendidos -->
+                <div class="col-xl col-md-4 col-sm-6">
+                    <div class="card-metrica card border-0 shadow-sm p-3 rounded-3 h-100 bg-white">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="icono-badge bg-danger-subtle text-danger rounded-circle p-2 me-2">
+                                <i class="fa-solid fa-box-archive"></i>
+                            </div>
+                            <span class="fw-bold text-muted small">PRODUCTOS VENDIDOS</span>
+                        </div>
+                        <h3 class="fw-bold text-danger mb-1">@resumen.ProductosVendidos</h3>
+                        <small class="text-muted text-uppercase fs-7">PRODUCTOS DISTINTOS</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 2: GRÁFICA / TABLA VENTAS POR DÍA Y RANKING PRODUCTOS MÁS VENDIDOS -->
+            <div class="row g-4 mb-4">
+                <!-- Ventas por Día (Con opción de alternar entre Tabla y Gráfico) -->
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm p-4 rounded-3 h-100 bg-white">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-dark mb-0">VENTAS POR DÍA</h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-sm @(verComoGrafico ? "btn-outline-secondary" : "btn-info text-white") fw-bold" @onclick="() => verComoGrafico = false">
+                                    <i class="fa-solid fa-table me-1"></i> Tabla
+                                </button>
+                                <button class="btn btn-sm @(verComoGrafico ? "btn-info text-white" : "btn-outline-secondary") fw-bold" @onclick="() => verComoGrafico = true">
+                                    <i class="fa-solid fa-chart-line me-1"></i> Gráfico
+                                </button>
+                            </div>
+                        </div>
+
+                        @if (!ventasPorDia.Any())
+                        {
+                            <div class="text-center text-muted py-4">No hay registros de ventas en este período.</div>
+                        }
+                        else
+                        {
+                            @if (!verComoGrafico)
+                            {
+                                <!-- VISTA TABLA -->
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>DÍA</th>
+                                                <th>FECHA</th>
+                                                <th class="text-center">Nº DE VENTAS</th>
+                                                <th class="text-end">TOTAL VENDIDO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var v in VentasPorDiaPaginadas)
+                                            {
+                                                <tr>
+                                                    <td class="fw-bold">@v.Fecha.ToString("dddd").ToUpper()</td>
+                                                    <td>@v.Fecha.ToString("dd/MM/yyyy")</td>
+                                                    <td class="text-center"><span class="badge bg-secondary">@v.CantidadVentas</span></td>
+                                                    <td class="text-end fw-bold text-success text-nowrap">$ @v.TotalVendido.ToString("N2")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Paginación Ventas por Día (7 registros por página) -->
+                                @if (TotalPaginasVentas > 1)
+                                {
+                                    <div class="paginacion mt-3">
+                                        <button class="btn-pagina flecha" title="Página anterior" @onclick="() => CambiarPaginaVentas(paginaVentasActual - 1)" disabled="@(paginaVentasActual == 1)">
+                                            <i class="fa-solid fa-chevron-left"></i>
+                                        </button>
+
+                                        @if (DebeMostrarPrimeraPaginaVentas)
+                                        {
+                                            <button class="@ObtenerClasePaginaVentas(1)" @onclick="() => CambiarPaginaVentas(1)">1</button>
+                                        }
+
+                                        @if (DebeMostrarPuntosInicialesVentas)
+                                        {
+                                            <span class="puntos-paginacion">...</span>
+                                        }
+
+                                        @foreach (var pagina in PaginasVisiblesVentas)
+                                        {
+                                            <button class="@ObtenerClasePaginaVentas(pagina)" @onclick="() => CambiarPaginaVentas(pagina)">@pagina</button>
+                                        }
+
+                                        @if (DebeMostrarPuntosFinalesVentas)
+                                        {
+                                            <span class="puntos-paginacion">...</span>
+                                        }
+
+                                        @if (DebeMostrarUltimaPaginaVentas)
+                                        {
+                                            <button class="@ObtenerClasePaginaVentas(TotalPaginasVentas)" @onclick="() => CambiarPaginaVentas(TotalPaginasVentas)">@TotalPaginasVentas</button>
+                                        }
+
+                                        <button class="btn-pagina flecha" title="Página siguiente" @onclick="() => CambiarPaginaVentas(paginaVentasActual + 1)" disabled="@(paginaVentasActual == TotalPaginasVentas)">
+                                            <i class="fa-solid fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <!-- VISTA GRÁFICO SVG (Estilo Figma) -->
+                                <div class="grafico-container position-relative py-3">
+                                    <!-- Eje Y y líneas de referencia (0 a 40) -->
+                                    <div class="grafico-eje-y d-flex flex-column justify-content-between text-muted small fw-bold">
+                                        <span>40</span>
+                                        <span>30</span>
+                                        <span>20</span>
+                                        <span>10</span>
+                                        <span>0</span>
+                                    </div>
+
+                                    <div class="grafico-contenido ms-4">
+                                        <!-- Líneas de referencia horizontales -->
+                                        <div class="linea-guia" style="bottom: 0%;"></div>
+                                        <div class="linea-guia" style="bottom: 25%;"></div>
+                                        <div class="linea-guia" style="bottom: 50%;"></div>
+                                        <div class="linea-guia" style="bottom: 75%;"></div>
+                                        <div class="linea-guia" style="bottom: 100%;"></div>
+
+                                        <!-- Gráfico SVG de Líneas -->
+                                        <svg viewBox="0 0 600 200" class="w-100 h-100 overflow-visible" preserveAspectRatio="none">
+                                            @{
+                                                var listaSemana = VentasPorDiaPaginadas.ToList();
+                                                int count = listaSemana.Count;
+                                                if (count > 0)
+                                                {
+                                                    double stepX = count == 1 ? 600 : 600.0 / (count - 1);
+                                                    string puntosSvg = "";
+                                                    for (int i = 0; i < count; i++)
+                                                    {
+                                                        double x = i * stepX;
+                                                        // Escala de 0 a 40 (altura de 200px)
+                                                        double val = Math.Min(40, Math.Max(0, listaSemana[i].CantidadVentas));
+                                                        double y = 200 - (val / 40.0 * 200);
+                                                        puntosSvg += $"{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},{y.ToString(System.Globalization.CultureInfo.InvariantCulture)} ";
+                                                    }
+
+                                                    <!-- Línea celeste de tendencia -->
+                                                    <polyline fill="none" stroke="#00c2ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="@puntosSvg.Trim()" />
+
+                                                    <!-- Círculos en los puntos de datos -->
+                                                    for (int i = 0; i < count; i++)
+                                                    {
+                                                        double x = i * stepX;
+                                                        double val = Math.Min(40, Math.Max(0, listaSemana[i].CantidadVentas));
+                                                        double y = 200 - (val / 40.0 * 200);
+                                                        <circle cx="@x.ToString(System.Globalization.CultureInfo.InvariantCulture)" cy="@y.ToString(System.Globalization.CultureInfo.InvariantCulture)" r="5" fill="#ffffff" stroke="#00c2ff" stroke-width="3" />
+                                                    }
+                                                }
+                                            }
+                                        </svg>
+
+                                        <!-- Eje X (Fechas de los 7 días de la semana activa) -->
+                                        <div class="grafico-eje-x d-flex justify-content-between mt-3 text-muted small fw-bold">
+                                            @foreach (var v in VentasPorDiaPaginadas)
+                                            {
+                                                <span>@v.Fecha.ToString("dd/MM")</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Controles de Paginación también disponibles en modo gráfico -->
+                                @if (TotalPaginasVentas > 1)
+                                {
+                                    <div class="paginacion mt-3">
+                                        <button class="btn-pagina flecha" title="Página anterior" @onclick="() => CambiarPaginaVentas(paginaVentasActual - 1)" disabled="@(paginaVentasActual == 1)">
+                                            <i class="fa-solid fa-chevron-left"></i>
+                                        </button>
+
+                                        @if (DebeMostrarPrimeraPaginaVentas)
+                                        {
+                                            <button class="@ObtenerClasePaginaVentas(1)" @onclick="() => CambiarPaginaVentas(1)">1</button>
+                                        }
+
+                                        @if (DebeMostrarPuntosInicialesVentas)
+                                        {
+                                            <span class="puntos-paginacion">...</span>
+                                        }
+
+                                        @foreach (var pagina in PaginasVisiblesVentas)
+                                        {
+                                            <button class="@ObtenerClasePaginaVentas(pagina)" @onclick="() => CambiarPaginaVentas(pagina)">@pagina</button>
+                                        }
+
+                                        @if (DebeMostrarPuntosFinalesVentas)
+                                        {
+                                            <span class="puntos-paginacion">...</span>
+                                        }
+
+                                        @if (DebeMostrarUltimaPaginaVentas)
+                                        {
+                                            <button class="@ObtenerClasePaginaVentas(TotalPaginasVentas)" @onclick="() => CambiarPaginaVentas(TotalPaginasVentas)">@TotalPaginasVentas</button>
+                                        }
+
+                                        <button class="btn-pagina flecha" title="Página siguiente" @onclick="() => CambiarPaginaVentas(paginaVentasActual + 1)" disabled="@(paginaVentasActual == TotalPaginasVentas)">
+                                            <i class="fa-solid fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                }
+                            }
+                        }
+                    </div>
+                </div>
+
+                <!-- Productos Más Vendidos -->
+                <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm p-4 rounded-3 h-100 bg-white">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-dark mb-0">PRODUCTOS MÁS VENDIDOS</h5>
+                            <span class="badge bg-light text-dark border">Top Ranking</span>
+                        </div>
+
+                        @if (!productosMasVendidos.Any())
+                        {
+                            <div class="text-center text-muted py-4">No hay productos vendidos en este período.</div>
+                        }
+                        else
+                        {
+                            <div class="d-flex flex-column gap-2">
+                                @foreach (var p in productosMasVendidos)
+                                {
+                                    <div class="d-flex align-items-center justify-content-between px-2 py-1 rounded bg-light">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <span class="badge bg-primary rounded-circle p-2 fs-6" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;">@p.Ranking</span>
+                                            <span class="fw-semibold text-dark">@p.Nombre</span>
+                                        </div>
+                                        <span class="fw-bold text-primary fs-5">@p.CantidadVendida</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 3: ESTADO FINANCIERO Y RESUMEN DE COMPRAS -->
+            <div class="row g-4">
+                <!-- Estado Financiero -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm p-4 rounded-3 h-100 bg-white">
+                        <h5 class="fw-bold text-dark mb-3">
+                            <i class="fa-solid fa-shield-halved me-2 text-primary"></i> ESTADO FINANCIERO
+                        </h5>
+                        <div class="d-flex justify-content-between align-items-center p-3 mb-2 bg-light rounded-2">
+                            <div>
+                                <span class="fw-bold text-secondary d-block">DEUDA CLIENTES</span>
+                                <small class="text-muted">TOTAL DE LO QUE NOS DEBEN LOS CLIENTES</small>
+                            </div>
+                            <h4 class="fw-bold text-success mb-0 text-nowrap">$ @estadoFinanciero.DeudaClientes.ToString("N2")</h4>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-3 mb-2 bg-light rounded-2">
+                            <div>
+                                <span class="fw-bold text-secondary d-block">DEUDA A PROVEEDORES</span>
+                                <small class="text-muted">TOTAL QUE DEBEMOS A PROVEEDORES</small>
+                            </div>
+                            <h4 class="fw-bold text-warning mb-0 text-nowrap">$ @estadoFinanciero.DeudaProveedores.ToString("N2")</h4>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-3 bg-primary-subtle rounded-2">
+                            <div>
+                                <span class="fw-bold text-primary d-block">SALDO PENDIENTE</span>
+                                <small class="text-muted">DEUDA DE CLIENTES</small>
+                            </div>
+                            <h4 class="fw-bold text-primary mb-0 text-nowrap">$ @estadoFinanciero.SaldoNetoPendiente.ToString("N2")</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen de Compras -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm p-4 rounded-3 h-100 bg-white">
+                        <h5 class="fw-bold text-dark mb-3">
+                            <i class="fa-solid fa-bag-shopping me-2 text-primary"></i> RESUMEN DE COMPRAS
+                        </h5>
+                        <div class="d-flex justify-content-between align-items-center p-3 mb-2 bg-light rounded-2">
+                            <div>
+                                <span class="fw-bold text-secondary d-block">COMPRAS REALIZADAS</span>
+                                <small class="text-muted">CANTIDAD DE COMPRAS EN EL PERIODO</small>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-0">@resumenCompras.CantidadCompras</h4>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-3 mb-2 bg-light rounded-2">
+                            <div>
+                                <span class="fw-bold text-secondary d-block">TOTAL INVERTIDO EN COMPRAS</span>
+                                <small class="text-muted">MONTO TOTAL GASTADO EN COMPRAS</small>
+                            </div>
+                            <h4 class="fw-bold text-success mb-0 text-nowrap">$ @resumenCompras.ComprasTotales.ToString("N2")</h4>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-2">
+                            <div>
+                                <span class="fw-bold text-secondary d-block">ULTIMA COMPRA</span>
+                                <small class="text-muted">FECHA DE LA ULTIMA COMPRA REALIZADA</small>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-0">
+                                @(resumenCompras.UltimaCompra.HasValue ? resumenCompras.UltimaCompra.Value.ToString("dd/MM/yyyy") : "-")
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+
+</div>
+
+@code {
+    private DateTime? fechaDesde = DateTime.Today.AddDays(-30);
+    private DateTime? fechaHasta = DateTime.Today;
+
+    private EstadisticasResumenDto resumen = new();
+    private List<EstadisticasVentasPorDiaDto> ventasPorDia = new();
+    private List<EstadisticasProductoMasVendidoDto> productosMasVendidos = new();
+    private EstadisticasEstadoFinancieroDto estadoFinanciero = new();
+    private EstadisticasResumenComprasDto resumenCompras = new();
+
+    // Paginación Ventas por Día (7 registros por semana)
+    private int paginaVentasActual = 1;
+    private const int registrosPorPaginaVentas = 7;
+
+    // Control de vista (Tabla vs Gráfico)
+    private bool verComoGrafico = false;
+
+    private bool cargando = true;
+    private string? mensajeError = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarEstadisticas();
+    }
+
+    private async Task CargarEstadisticas()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            // Carga paralela concurrente para optimizar rendimiento (Top de productos ajustado a 7 para igualar altura de tarjeta)
+            var tareaResumen = EstadisticasService.ObtenerResumen(fechaDesde, fechaHasta);
+            var tareaVentasDia = EstadisticasService.ObtenerVentasPorDia(fechaDesde, fechaHasta);
+            var tareaTopProductos = EstadisticasService.ObtenerProductosMasVendidos(fechaDesde, fechaHasta, 7);
+            var tareaFinanciero = EstadisticasService.ObtenerEstadoFinanciero(fechaDesde, fechaHasta);
+            var tareaResumenCompras = EstadisticasService.ObtenerResumenCompras(fechaDesde, fechaHasta);
+
+            await Task.WhenAll(tareaResumen, tareaVentasDia, tareaTopProductos, tareaFinanciero, tareaResumenCompras);
+
+            resumen = await tareaResumen;
+            ventasPorDia = await tareaVentasDia;
+            productosMasVendidos = await tareaTopProductos;
+            estadoFinanciero = await tareaFinanciero;
+            resumenCompras = await tareaResumenCompras;
+
+            AjustarPaginaVentas();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar las estadísticas: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task FiltrarEstadisticas()
+    {
+        if (fechaDesde.HasValue && fechaHasta.HasValue && fechaDesde > fechaHasta)
+        {
+            mensajeError = "La fecha 'Desde' no puede ser mayor que la fecha 'Hasta'.";
+            return;
+        }
+
+        paginaVentasActual = 1;
+        await CargarEstadisticas();
+    }
+
+    // --- LÓGICA PAGINACIÓN VENTAS POR DÍA ---
+    private IEnumerable<EstadisticasVentasPorDiaDto> VentasPorDiaPaginadas =>
+        ventasPorDia
+            .Skip((paginaVentasActual - 1) * registrosPorPaginaVentas)
+            .Take(registrosPorPaginaVentas);
+
+    private int TotalPaginasVentas
+    {
+        get
+        {
+            var total = ventasPorDia.Count;
+            return total == 0 ? 1 : (int)Math.Ceiling(total / (double)registrosPorPaginaVentas);
+        }
+    }
+
+    private void CambiarPaginaVentas(int pagina)
+    {
+        if (pagina < 1 || pagina > TotalPaginasVentas) return;
+        paginaVentasActual = pagina;
+    }
+
+    private IEnumerable<int> PaginasVisiblesVentas
+    {
+        get
+        {
+            if (TotalPaginasVentas <= 5) return Enumerable.Range(1, TotalPaginasVentas);
+            var inicio = Math.Max(2, paginaVentasActual - 1);
+            var fin = Math.Min(TotalPaginasVentas - 1, paginaVentasActual + 1);
+            if (paginaVentasActual <= 2) { inicio = 2; fin = 4; }
+            if (paginaVentasActual >= TotalPaginasVentas - 1) { inicio = TotalPaginasVentas - 3; fin = TotalPaginasVentas - 1; }
+            return Enumerable.Range(inicio, fin - inicio + 1);
+        }
+    }
+
+    private bool DebeMostrarPrimeraPaginaVentas => TotalPaginasVentas > 5 && !PaginasVisiblesVentas.Contains(1);
+    private bool DebeMostrarUltimaPaginaVentas => TotalPaginasVentas > 5 && !PaginasVisiblesVentas.Contains(TotalPaginasVentas);
+    private bool DebeMostrarPuntosInicialesVentas => TotalPaginasVentas > 5 && PaginasVisiblesVentas.FirstOrDefault() > 2;
+    private bool DebeMostrarPuntosFinalesVentas => TotalPaginasVentas > 5 && PaginasVisiblesVentas.LastOrDefault() < TotalPaginasVentas - 1;
+    private string ObtenerClasePaginaVentas(int pagina) => paginaVentasActual == pagina ? "btn-pagina activa" : "btn-pagina";
+
+    private void AjustarPaginaVentas()
+    {
+        if (paginaVentasActual > TotalPaginasVentas) paginaVentasActual = TotalPaginasVentas;
+        if (paginaVentasActual < 1) paginaVentasActual = 1;
+    }
+}

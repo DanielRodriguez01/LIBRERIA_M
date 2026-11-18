@@ -70,6 +70,11 @@
                         ENTREGADO
                     </button>
 
+                    <button class="@ObtenerClaseFiltro("CANCELADO")"
+                            @onclick='() => CambiarFiltroEstado("CANCELADO")'>
+                        CANCELADO
+                    </button>
+
                 </div>
 
             </div>
@@ -107,7 +112,7 @@
                         {
                             @foreach (var p in PedidosFiltrados)
                             {
-                                <tr>
+                                <tr class="@ObtenerClaseFila(p.Estado)">
                                     <td>
                                         <strong>@p.NumeroPedido</strong>
                                     </td>
@@ -341,6 +346,7 @@
             "PENDIENTE" => "btn-filtro filtro-sinstock",
             "TERMINADO" => "btn-filtro filtro-stockbajo",
             "ENTREGADO" => "btn-filtro filtro-pagado",
+            "CANCELADO" => "btn-filtro filtro-cancelado",
             _ => "btn-filtro"
         };
     }
@@ -358,6 +364,12 @@
             "CANCELADO" => "estado-cancelado",
             _ => ""
         };
+    }
+
+    // Los pedidos cancelados se muestran en gris para diferenciarlos del resto
+    private string? ObtenerClaseFila(string? estado)
+    {
+        return estado?.Trim().ToUpper() == "CANCELADO" ? "fila-cancelada" : null;
     }
 
     private void NuevoPedido() => Navigation.NavigateTo("/pedidos/nuevo");

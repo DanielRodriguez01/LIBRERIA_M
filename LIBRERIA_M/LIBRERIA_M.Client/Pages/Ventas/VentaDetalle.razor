@@ -87,6 +87,11 @@
                             <span>@(string.IsNullOrWhiteSpace(venta.TipoCliente) ? "CONSUMIDOR FINAL" : venta.TipoCliente.ToUpper())</span>
                         </div>
 
+                        <div class="info-grupo">
+                            <label>ENTREGA:</label>
+                            <span>@TextoEntrega</span>
+                        </div>
+
                         @if (!string.IsNullOrWhiteSpace(venta.Observaciones))
                         {
                             <div class="info-grupo">
@@ -138,11 +143,11 @@
                         <div class="factura-totales">
                             <div class="total-fila">
                                 <span>SUBTOTAL:</span>
-                                <strong>$ @venta.TotalVenta.ToString("N2")</strong>
+                                <strong>$ @SubtotalSinDescuento.ToString("N2")</strong>
                             </div>
                             <div class="total-fila">
                                 <span>DESCUENTO:</span>
-                                <strong>$ 0,00</strong>
+                                <strong>$ @MontoDescuento.ToString("N2")</strong>
                             </div>
                             <div class="total-fila total-destacado">
                                 <span>TOTAL:</span>
@@ -165,6 +170,42 @@
 
     private VentaDetalleCompletoDto? venta;
     private bool cargando = true;
+
+    // Subtotal sin descuento: suma de Cantidad x Precio unitario de cada renglón
+    private decimal SubtotalSinDescuento =>
+        venta?.Detalles?.Sum(d => d.Cantidad * d.PrecioUnitario) ?? 0m;
+
+    // Descuento: diferencia entre el subtotal sin descuento y lo que suman los renglones ya con descuento
+    private decimal MontoDescuento
+    {
+        get
+        {
+            var totalRenglones = venta?.Detalles?.Sum(d => d.Subtotal) ?? 0m;
+            return Math.Max(0m, Math.Round(SubtotalSinDescuento - totalRenglones, 2, MidpointRounding.AwayFromZero));
+        }
+    }
+
+    // Texto de entrega del comprobante: retiro en el local o dirección y horario del envío
+    private string TextoEntrega
+    {
+        get
+        {
+            if (venta == null || !string.Equals(venta.TipoEntrega, "ENVIO", StringComparison.OrdinalIgnoreCase))
+                return "Retiró en el local";
+
+            var direccion = string.IsNullOrWhiteSpace(venta.DireccionEntrega) ? "-" : venta.DireccionEntrega.Trim();
+
+            return venta.HorarioEntrega.HasValue
+                ? $"Entregado en: {direccion} ({FormatearHorario(venta.HorarioEntrega.Value)})"
+                : $"Entregado en: {direccion}";
+        }
+    }
+
+    // Horario con AM/PM (por ejemplo "2:30 PM")
+    private static string FormatearHorario(TimeSpan horario)
+    {
+        return DateTime.Today.Add(horario).ToString("h:mm tt", CultureInfo.InvariantCulture);
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -262,13 +303,14 @@
         await JS.InvokeVoidAsync("window.print");
     }
 
+    // Estados vigentes de la venta: PENDIENTE, PARCIAL y PAGADO
     private string ObtenerClaseEstado(string estado)
     {
-        return estado switch
+        return (estado ?? string.Empty).Trim().ToUpperInvariant() switch
         {
-            "Pagada" => "badge-estado estado-pagada",
-            "ConDeuda" => "badge-estado estado-deuda",
-            "Pendiente" => "badge-estado estado-pendiente",
+            "PAGADO" or "PAGADA" => "badge-estado estado-pagada",
+            "PARCIAL" => "badge-estado estado-parcial",
+            "PENDIENTE" => "badge-estado estado-pendiente",
             _ => "badge-estado"
         };
     }

@@ -21,6 +21,16 @@ namespace LIBRERIA_M.Models.Pedidos
         [Required(ErrorMessage = "El origen del pedido es obligatorio.")]
         public string OrigenPedido { get; set; } = "Presencial";
 
+        // Modalidad de entrega: "RETIRO" (retira en el local) o "ENVIO" (enviar pedido)
+        [Required(ErrorMessage = "La modalidad de entrega es obligatoria.")]
+        public string TipoEntrega { get; set; } = "RETIRO";
+
+        // Solo se usan cuando TipoEntrega = "ENVIO"
+        [StringLength(250, ErrorMessage = "La dirección de entrega no puede superar los 250 caracteres.")]
+        public string? DireccionEntrega { get; set; }
+
+        public TimeSpan? HorarioEntrega { get; set; }
+
         public List<AgregarDetallePedidoDTO> Detalles { get; set; } = new();
     }
 }

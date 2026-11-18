@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using LIBRERIA_M.Data;
@@ -74,6 +75,16 @@ namespace LIBRERIA_M.Repositories.Pedido
                 commandType: CommandType.StoredProcedure);
         }
 
+        public async Task<IEnumerable<LIBRERIA_M.Models.Pedidos.HistorialPedidoDTO>> ListarHistorialPedido(int idPedido)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            return await connection.QueryAsync<LIBRERIA_M.Models.Pedidos.HistorialPedidoDTO>(
+                "sp_ListarHistorialPedido",
+                new { IdPedido = idPedido },
+                commandType: CommandType.StoredProcedure);
+        }
+
         // ==========================================
         // 2. ESCRITURA Y EDICIÓN
         // ==========================================
@@ -95,7 +106,10 @@ namespace LIBRERIA_M.Repositories.Pedido
                     dto.IdUsuario,
                     dto.FechaEntrega,
                     dto.Observaciones,
-                    dto.OrigenPedido
+                    dto.OrigenPedido,
+                    dto.TipoEntrega,
+                    dto.DireccionEntrega,
+                    dto.HorarioEntrega
                 },
                 commandType: CommandType.StoredProcedure);
 
@@ -149,6 +163,22 @@ namespace LIBRERIA_M.Repositories.Pedido
                 commandType: CommandType.StoredProcedure);
         }
 
+        public async Task ActualizarEntregaPedido(int idPedido, LIBRERIA_M.Models.Pedidos.ActualizarEntregaPedidoDTO dto)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            await connection.ExecuteAsync(
+                "sp_ActualizarEntregaPedido",
+                new
+                {
+                    IdPedido = idPedido,
+                    dto.TipoEntrega,
+                    dto.DireccionEntrega,
+                    dto.HorarioEntrega
+                },
+                commandType: CommandType.StoredProcedure);
+        }
+
         public async Task EliminarDetallePedido(int idDetallePedido)
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -173,14 +203,34 @@ namespace LIBRERIA_M.Repositories.Pedido
                 commandType: CommandType.StoredProcedure);
         }
 
-        public async Task EntregarPedido(int idPedido)
+        public async Task<LIBRERIA_M.Models.Pedidos.ResultadoEntregaPedidoDTO?> EntregarPedido(int idPedido, LIBRERIA_M.Models.Pedidos.EntregarPedidoDTO dto)
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            await connection.ExecuteAsync(
+            // sp_EntregarPedido devuelve mas de un conjunto de resultados
+            // (sp_InsertarVenta devuelve el suyo). El que interesa es el ultimo.
+            using var grids = await connection.QueryMultipleAsync(
                 "sp_EntregarPedido",
-                new { IdPedido = idPedido },
+                new
+                {
+                    IdPedido = idPedido,
+                    dto.MontoEfectivo,
+                    dto.MontoTransferencia
+                },
                 commandType: CommandType.StoredProcedure);
+
+            LIBRERIA_M.Models.Pedidos.ResultadoEntregaPedidoDTO? resultado = null;
+
+            while (!grids.IsConsumed)
+            {
+                var fila = (await grids.ReadAsync<LIBRERIA_M.Models.Pedidos.ResultadoEntregaPedidoDTO>()).FirstOrDefault();
+                if (fila != null)
+                {
+                    resultado = fila;
+                }
+            }
+
+            return resultado;
         }
 
         public async Task CancelarPedido(int idPedido)

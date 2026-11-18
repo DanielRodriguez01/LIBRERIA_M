@@ -19,6 +19,29 @@ namespace LIBRERIA_M.Controllers
         }
 
         // ==========================================
+        // VALIDACIÓN DE LA MODALIDAD DE ENTREGA
+        // Devuelve null si es válida, o el mensaje de error.
+        // ==========================================
+        private static string? ValidarEntrega(string? tipoEntrega, string? direccionEntrega, TimeSpan? horarioEntrega)
+        {
+            var tipo = (tipoEntrega ?? "RETIRO").Trim().ToUpperInvariant();
+
+            if (tipo != "RETIRO" && tipo != "ENVIO")
+                return "La modalidad de entrega no es válida.";
+
+            if (tipo == "ENVIO")
+            {
+                if (string.IsNullOrWhiteSpace(direccionEntrega))
+                    return "Para enviar el pedido debe escribir la dirección de entrega.";
+
+                if (horarioEntrega == null)
+                    return "Para enviar el pedido debe indicar el horario de entrega.";
+            }
+
+            return null;
+        }
+
+        // ==========================================
         // 1. LISTADOS Y CONSULTAS
         // ==========================================
 
@@ -57,6 +80,13 @@ namespace LIBRERIA_M.Controllers
             return Ok(detalle);
         }
 
+        [HttpGet("{id:int}/historial")]
+        public async Task<IActionResult> ListarHistorialPedido(int id)
+        {
+            var historial = await _pedidoRepository.ListarHistorialPedido(id);
+            return Ok(historial);
+        }
+
         // ==========================================
         // 2. ESCRITURA Y EDICIÓN
         // ==========================================
@@ -66,6 +96,10 @@ namespace LIBRERIA_M.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            var errorEntrega = ValidarEntrega(dto.TipoEntrega, dto.DireccionEntrega, dto.HorarioEntrega);
+            if (errorEntrega != null)
+                return BadRequest(errorEntrega);
 
             try
             {
@@ -112,6 +146,29 @@ namespace LIBRERIA_M.Controllers
             }
         }
 
+        // Cambia la modalidad de entrega (Retira en local / Enviar pedido)
+        // Solo pedidos Pendiente o Terminado (lo controla el procedimiento almacenado).
+        [HttpPut("{id:int}/entrega")]
+        public async Task<IActionResult> ActualizarEntregaPedido(int id, [FromBody] ActualizarEntregaPedidoDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var errorEntrega = ValidarEntrega(dto.TipoEntrega, dto.DireccionEntrega, dto.HorarioEntrega);
+            if (errorEntrega != null)
+                return BadRequest(errorEntrega);
+
+            try
+            {
+                await _pedidoRepository.ActualizarEntregaPedido(id, dto);
+                return Ok(new { Mensaje = "Modalidad de entrega actualizada correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpDelete("detalle/{idDetallePedido:int}")]
         public async Task<IActionResult> EliminarDetallePedido(int idDetallePedido)
         {
@@ -144,17 +201,21 @@ namespace LIBRERIA_M.Controllers
             }
         }
 
+        // Entrega el pedido, genera la venta y registra el pago (Efectivo / Transferencia)
         [HttpPut("{id:int}/entregar")]
-        public async Task<IActionResult> EntregarPedido(int id)
+        public async Task<IActionResult> EntregarPedido(int id, [FromBody] EntregarPedidoDTO dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
-                await _pedidoRepository.EntregarPedido(id);
-                return Ok(new { Mensaje = "Pedido marcado como Entregado exitosamente." });
+                var resultado = await _pedidoRepository.EntregarPedido(id, dto);
+                return Ok(resultado ?? new ResultadoEntregaPedidoDTO { IdPedido = id, Estado = "Entregado" });
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { mensaje = ex.Message });
             }
         }
 
